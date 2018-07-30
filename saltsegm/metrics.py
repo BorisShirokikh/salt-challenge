@@ -9,11 +9,11 @@ def fraction(numerator, denominator, empty_val: float = 1):
 def dice_score(x: np.ndarray, y: np.ndarray) -> float:
     return fraction(2 * np.sum(x & y), np.sum(x) + np.sum(y))
 
-def main_metrics(x: np.ndarray, y: np.ndarray) -> float:
+def main_metric(x: np.ndarray, y: np.ndarray) -> float:
     assert x.shape == y.shape
     if np.sum(x | y) == 0:
         return 1
-    elif (np.sum(x) == 0) | (np.sum(y) == 0):
+    elif (np.sum(x) == 0) or (np.sum(y) == 0):
         return 0
     else:
         iou = np.sum(x & y) / np.sum(x | y)
