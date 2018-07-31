@@ -7,21 +7,31 @@ def fraction(numerator, denominator, empty_val: float = 1):
 
 
 def dice_score(x: np.ndarray, y: np.ndarray) -> float:
+    assert x.dtype == bool and y.dtype == bool, \
+        'input array should have bool dtype, {x.dtype} {y.dtype} are given'
+        
+    assert x.shape == y.shape
+        
     return fraction(2 * np.sum(x & y), np.sum(x) + np.sum(y))
 
-def main_metric(x: np.ndarray, y: np.ndarray) -> float:
-    assert x.shape == y.shape
-    if np.sum(x | y) == 0:
+
+def main_metric(true: np.ndarray, pred: np.ndarray) -> float:
+    assert true.dtype == bool and pred.dtype == bool, \
+        'input array should have bool dtype, {true.dtype} {pred.dtype} are given'
+        
+    assert true.shape == pred.shape
+    
+    if np.sum(true | pred) == 0:
         return 1
-    elif (np.sum(x) == 0) or (np.sum(y) == 0):
+    elif (np.sum(true) == 0) or (np.sum(pred) == 0):
         return 0
     else:
-        iou = np.sum(x & y) / np.sum(x | y)
+        iou = np.sum(true & pred) / np.sum(true | pred)
         threshholds = np.arange(0.5, 1, 0.05)
         metric = 0
         for th in threshholds:
             TP = int(th < iou)
-            FN = int(np.sum(x & y) < np.sum(y))
-            FP = int(np.sum(x & y) < np.sum(x))
+            FN = int(th > iou)
+            FP = int(th > iou)
             metric += TP / (TP + FN + FP)
         return metric / threshholds.shape[0]
