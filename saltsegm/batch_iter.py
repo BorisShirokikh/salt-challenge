@@ -17,8 +17,8 @@ class BatchIter:
         for _id in tqdm(ids):
             x_stack.append(load_x(_id))
             y_stack.append(load_y(_id))
-        self.x_stack = np.array(x_stack)
-        self.y_stack = np.array(y_stack)
+        self.x_stack = np.array(x_stack, dtype='float32')
+        self.y_stack = np.array(y_stack, dtype='float32')
 
         self.augm_fn = augm_fn
 
@@ -26,8 +26,8 @@ class BatchIter:
 
 
     def flow(self):
-        batch_x = np.array([np.zeros(self.size)] * self.batch_size)
-        batch_y = np.array([np.zeros(self.size)] * self.batch_size)
+        batch_x = np.array([np.zeros(self.size)] * self.batch_size, dtype='float32')
+        batch_y = np.array([np.zeros(self.size)] * self.batch_size, dtype='float32')
 
         while True:
             for i in range(self.batch_size):

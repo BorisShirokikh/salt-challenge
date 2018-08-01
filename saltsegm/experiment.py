@@ -69,18 +69,21 @@ def load_experiment(exp_path, n_val):
     for _id in train_ids:
         x_train.append( ds.load_x(_id) )
         y_train.append( ds.load_y(_id) )
-    x_train, y_train = np.array(x_train), np.array(y_train)
+    x_train = np.array(x_train, dtype='float32')
+    y_train = np.array(y_train, dtype='float32')
 
     x_val, y_val = [], []
     for _id in val_ids:
         x_val.append( ds.load_x(_id) )
         y_val.append( ds.load_y(_id) )
-    x_val, y_val = np.array(x_val), np.array(y_val)
+    x_val = np.array(x_val, dtype='float32')
+    y_val = np.array(y_val, dtype='float32')
 
     x_test, y_test = [], []
     for _id in train_ids:
         x_test.append( ds.load_x(_id) )
         y_test.append( ds.load_y(_id) )
-    x_test, y_test = np.array(x_test), np.array(y_test)
+    x_test = np.array(x_test, dtype='float32')
+    y_test = np.array(y_test, dtype='float32')
 
     return x_train, y_train, x_val, y_val, x_test, y_test
