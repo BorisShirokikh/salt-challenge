@@ -5,7 +5,21 @@ import numpy as np
 from .utils import load_json, dump_json
 from .dataset import Dataset
 
+
 def generate_experiment(exp_path, cv_splits, dataset):
+    """Generates experiment with given parameters. Main information saves in config.
+
+    Parameters
+    ----------
+    exp_path: str
+        Path where to generate experiment and save config.
+
+    cv_splits: list
+        List of dict(s), which describes cross-val splitting of experiment.
+
+    dataset: class
+        Dataset like object.
+    """
     if not os.path.exists(exp_path):
         os.mkdir(exp_path)
 
@@ -25,6 +39,20 @@ def generate_experiment(exp_path, cv_splits, dataset):
 
 
 def load_experiment(exp_path, n_val):
+    """Loads stacks of images to carry on experiment with.
+
+    Parameters
+    ----------
+    exp_path: str
+        Path where to load experiment info from.
+
+    n_val: int
+        The id of validation (depends on number of generated experiments).
+
+    Returns
+    -------
+        x_train, y_train, x_val, y_val, x_test, y_test: np.ndarray
+    """
     config_path = os.path.join(exp_path, 'config.json')
 
     config = load_json(config_path)
@@ -55,5 +83,4 @@ def load_experiment(exp_path, n_val):
         y_test.append( ds.load_y(_id) )
     x_test, y_test = np.array(x_test), np.array(y_test)
 
-    return x_train, y_train, x_val, y_val, x_test, y_test        
-            
+    return x_train, y_train, x_val, y_val, x_test, y_test
