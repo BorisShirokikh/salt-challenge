@@ -5,16 +5,35 @@ from tqdm import tqdm
 
 
 class BatchIter:
-    def __init__(self, ids, load_x, load_y, batch_size, augm_fn):
-        self.ids = ids
+    def __init__(self, train_ids, load_x, load_y, augm_fn, batch_size=32):
+        """Creates batch iterator both for keras and torch models.
 
-        self.size = load_x(ids[0]).shape
+        Parameters
+        ----------
+        train_ids: list
+            ids to generate train batches.
+
+        load_x: Callable
+            `dataset` function to load images.
+
+        load_y: Callable
+            `dataset` function to load masks.
+
+        augm_fn: Callable
+            Function to augment x/y pairs.
+
+        batch_size: int, optional
+            Size of generated batch.
+        """
+        self.train_ids = train_ids
+
+        self.size = load_x(train_ids[0]).shape
 
         self.batch_size = batch_size
 
         x_stack = []
         y_stack = []
-        for _id in tqdm(ids):
+        for _id in tqdm(train_ids):
             x_stack.append(load_x(_id))
             y_stack.append(load_y(_id))
         self.x_stack = np.array(x_stack, dtype='float32')
@@ -22,10 +41,10 @@ class BatchIter:
 
         self.augm_fn = augm_fn
 
-        self.inner_ids = np.arange(len(ids))
-
+        self.inner_ids = np.arange(len(train_ids))
 
     def flow(self):
+        """Generator."""
         batch_x = np.array([np.zeros(self.size)] * self.batch_size, dtype='float32')
         batch_y = np.array([np.zeros(self.size)] * self.batch_size, dtype='float32')
 
