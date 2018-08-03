@@ -1,6 +1,8 @@
 import numpy as np
 import torch
 
+from saltsegm.utils import get_pred
+
 
 def to_cuda(x, cuda: bool = None):
     if cuda or (cuda is None and torch.cuda.is_available()):
@@ -27,3 +29,14 @@ def to_var(x: np.ndarray, cuda: bool = None, requires_grad: bool = True) -> torc
     if requires_grad:
         x.requires_grad_()
     return to_cuda(x, cuda)
+
+
+def calc_val_metric(true_t, pred_t, metric_fn):
+    true_np = to_np(true_t)
+    pred_np = to_np(pred_t)
+
+    metric_list = []
+    for t, p in zip(true_np, pred_np):
+        metric_list.append(metric_fn(get_pred(t), get_pred(p)))
+
+    return np.mean(metric_list)
