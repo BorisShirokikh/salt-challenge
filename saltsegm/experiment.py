@@ -27,18 +27,18 @@ def generate_experiment(exp_path, cv_splits, dataset):
               'modalities': dataset.modalities,
               'target': dataset.target,
               'n_splits': len(cv_splits)}
-    dump_json( config, os.path.join(exp_path, 'config.json') )
+    dump_json(config, os.path.join(exp_path, 'config.json'))
 
     for i, split in enumerate(cv_splits):
         val_path = os.path.join(exp_path, f'experiment_{i}')
         os.mkdir(val_path)
 
-        dump_json( list(np.array(split['train_ids'], dtype='str')), os.path.join(val_path, 'train_ids.json') )
-        dump_json( list(np.array(split['val_ids'], dtype='str')), os.path.join(val_path, 'val_ids.json') )
-        dump_json( list(np.array(split['test_ids'], dtype='str')), os.path.join(val_path, 'test_ids.json') )
+        dump_json(list(np.array(split['train_ids'], dtype='str')), os.path.join(val_path, 'train_ids.json'))
+        dump_json(list(np.array(split['val_ids'], dtype='str')), os.path.join(val_path, 'val_ids.json'))
+        dump_json(list(np.array(split['test_ids'], dtype='str')), os.path.join(val_path, 'test_ids.json'))
 
 
-def load_experiment(exp_path, n_val):
+def load_experiment_data(exp_path, n_val):
     """Loads stacks of images to carry on experiment with.
 
     Parameters
@@ -61,28 +61,28 @@ def load_experiment(exp_path, n_val):
 
     val_path = os.path.join(exp_path, f'experiment_{n_val}')
 
-    train_ids = np.array( load_json(os.path.join(val_path, 'train_ids.json')), dtype='int64' )
-    val_ids = np.array( load_json(os.path.join(val_path, 'val_ids.json')), dtype='int64' )
-    test_ids = np.array( load_json(os.path.join(val_path, 'test_ids.json')), dtype='int64' )
+    train_ids = np.array(load_json(os.path.join(val_path, 'train_ids.json')), dtype='int64')
+    val_ids = np.array(load_json(os.path.join(val_path, 'val_ids.json')), dtype='int64')
+    test_ids = np.array(load_json(os.path.join(val_path, 'test_ids.json')), dtype='int64')
 
     x_train, y_train = [], []
     for _id in train_ids:
-        x_train.append( ds.load_x(_id) )
-        y_train.append( ds.load_y(_id) )
+        x_train.append(ds.load_x(_id))
+        y_train.append(ds.load_y(_id))
     x_train = np.array(x_train, dtype='float32')
     y_train = np.array(y_train, dtype='float32')
 
     x_val, y_val = [], []
     for _id in val_ids:
-        x_val.append( ds.load_x(_id) )
-        y_val.append( ds.load_y(_id) )
+        x_val.append(ds.load_x(_id))
+        y_val.append(ds.load_y(_id))
     x_val = np.array(x_val, dtype='float32')
     y_val = np.array(y_val, dtype='float32')
 
     x_test, y_test = [], []
-    for _id in train_ids:
-        x_test.append( ds.load_x(_id) )
-        y_test.append( ds.load_y(_id) )
+    for _id in test_ids:
+        x_test.append(ds.load_x(_id))
+        y_test.append(ds.load_y(_id))
     x_test = np.array(x_test, dtype='float32')
     y_test = np.array(y_test, dtype='float32')
 
