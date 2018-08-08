@@ -1,8 +1,9 @@
 import os
 
 import numpy as np
+from tqdm import tqdm
 
-from .utils import load_json, dump_json
+from .utils import load_json, dump_json, load_pred, get_pred
 from .dataset import Dataset
 
 
@@ -21,7 +22,7 @@ def generate_experiment(exp_path, cv_splits, dataset):
         Dataset like object.
     """
     if not os.path.exists(exp_path):
-        os.mkdir(exp_path)
+        os.makedirs(exp_path)
 
     config = {'data_path': dataset.data_path,
               'modalities': dataset.modalities,
@@ -87,3 +88,62 @@ def load_experiment_data(exp_path, n_val):
     y_test = np.array(y_test, dtype='float32')
 
     return x_train, y_train, x_val, y_val, x_test, y_test
+
+
+def make_predictions(exp_path, n_val, model):
+    config_path = os.path.join(exp_path, 'config.json')
+
+    config = load_json(config_path)
+    ds = Dataset(data_path=config['data_path'], modalities=config['modalities'],
+                 target=config['target'])
+
+    val_path = os.path.join(exp_path, f'experiment_{n_val}')
+
+    pred_path = os.path.join(val_path, 'test_predictions')
+    if not os.path.exists(pred_path):
+        os.makedirs(pred_path)
+
+    test_ids_str = load_json(os.path.join(val_path, 'test_ids.json'))
+    test_ids = np.array(test_ids_str, dtype='int64')
+
+    for _id, _id_str in tqdm(zip(test_ids, test_ids_str)):
+        x = ds.load_x(_id)
+        y = model.do_inf_step([x])[0]
+
+        y_filename = os.path.join(pred_path, _id_str + '.npy')
+
+        np.save(y_filename, y)
+
+
+def calculate_metrics(exp_path, n_val, metrics_dict):
+    config_path = os.path.join(exp_path, 'config.json')
+
+    config = load_json(config_path)
+    ds = Dataset(data_path=config['data_path'], modalities=config['modalities'],
+                 target=config['target'])
+    
+    val_path = os.path.join(exp_path, f'experiment_{n_val}')
+    pred_path = os.path.join(val_path, 'test_predictions')
+    
+    metric_path = os.path.join(val_path, 'test_metrics')
+    if not os.path.exists(metric_path):
+        os.makedirs(metric_path)
+
+    test_ids_str = load_json(os.path.join(val_path, 'test_ids.json'))
+    test_ids = np.array(test_ids_str, dtype='int64')
+    
+    for metric_name in metrics_dict.keys():
+        metric_fn = metrics_dict[metric_name]
+        
+        results = {}
+        for _id, _id_str in zip(test_ids, test_ids_str):
+            pred = get_pred(load_pred(_id, pred_path))
+            mask = get_pred(ds.load_y(_id))
+            
+            result = metric_fn(mask, pred)
+            results[_id_str] = result
+        # end for
+
+        metric_filename = os.path.join(metric_path, metric_name + '.json')
+        dump_json(results, metric_filename)
+    # end for
