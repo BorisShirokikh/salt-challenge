@@ -1,3 +1,5 @@
+import os
+
 import torch
 import torch.nn as nn
 from tqdm import tqdm
@@ -10,7 +12,9 @@ class TorchModel:
         self.model = model
         self.loss_fn = loss_fn
         self.metric_fn = metric_fn
-        self.optimizer = optim(self.model.parameters(), lr=lr)
+        self.lr = lr
+        # change to set_optimizer
+        self.optimizer = optim(self.model.parameters(), lr=self.lr)
 
     def do_train_step(self, x, y):
         x_t = to_var(x)
