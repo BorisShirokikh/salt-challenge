@@ -1,3 +1,4 @@
+import os
 import json
 
 import numpy as np
@@ -50,3 +51,22 @@ def dump_json(value, path: str, *, indent: int = None):
     """Dump a json-serializable object to a json file."""
     with open(path, 'w') as f:
         return json.dump(value, f, indent=indent)
+
+
+def load_pred(identifier, predictions_path):
+    """
+    Loads the prediction numpy tensor with specified id.
+
+    Parameters
+    ----------
+    identifier: int
+        id to load.
+
+    predictions_path: str
+        Path where to load prediction from.
+
+    Returns
+    -------
+    prediction: numpy.float32
+    """
+    return np.float32(np.load(os.path.join(predictions_path, f'{identifier}.npy')))
