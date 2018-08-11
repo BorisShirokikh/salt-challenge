@@ -1,7 +1,6 @@
 import os
 
 import numpy as np
-from tqdm import tqdm
 
 from .utils import load_json, dump_json, load_pred, get_pred
 from .dataset import Dataset
@@ -106,7 +105,7 @@ def make_predictions(exp_path, n_val, model):
     test_ids_str = load_json(os.path.join(val_path, 'test_ids.json'))
     test_ids = np.array(test_ids_str, dtype='int64')
 
-    for _id, _id_str in tqdm(zip(test_ids, test_ids_str)):
+    for _id, _id_str in zip(test_ids, test_ids_str):
         x = ds.load_x(_id)
         y = model.do_inf_step([x])[0]
 

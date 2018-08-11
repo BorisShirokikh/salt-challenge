@@ -1,7 +1,6 @@
 import random
 
 import numpy as np
-from tqdm import tqdm
 
 
 class BatchIter:
@@ -33,7 +32,7 @@ class BatchIter:
 
         x_stack = []
         y_stack = []
-        for _id in tqdm(train_ids):
+        for _id in train_ids:
             x_stack.append(load_x(_id))
             y_stack.append(load_y(_id))
         self.x_stack = np.array(x_stack, dtype='float32')
