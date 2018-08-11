@@ -9,6 +9,26 @@ from .torch_utils import to_var, to_np, calc_val_metric
 
 class TorchModel:
     def __init__(self, model, loss_fn, metric_fn, optim, lr):
+        """Custom torch model class to handle basic operations.
+
+        Parameters
+        ----------
+        model: torch.nn.Module, or the same
+            Model graph.
+
+        loss_fn: torch.nn.modules.loss, or the same
+            Loss function to calculate gradients.
+
+        metric_fn: Callable
+            Function to calculate metric between `true` and `pred` tensors
+            during the validation step.
+
+        optim: torch.optim, or the same
+            Optimizer to do back propagation step.
+
+        lr: float
+            Learning rate.
+        """
         self.model = model
         self.loss_fn = loss_fn
         self.metric_fn = metric_fn
@@ -17,6 +37,7 @@ class TorchModel:
         self.optimizer = optim(self.model.parameters(), lr=self.lr)
 
     def do_train_step(self, x, y):
+        """Model performs single train step."""
         x_t = to_var(x)
         y_t = to_var(y, requires_grad=False)
 
@@ -30,6 +51,7 @@ class TorchModel:
         return to_np(loss)
 
     def do_val_step(self, x, y):
+        """Model performs signle validation step."""
         x_t = to_var(x, requires_grad=False)
         y_t = to_var(y, requires_grad=False)
 
@@ -42,6 +64,7 @@ class TorchModel:
         return to_np(loss), metric
 
     def do_inf_step(self, x):
+        """Model preforms single inference step."""
         x_t = to_var(x)
 
         with torch.no_grad():
@@ -51,6 +74,31 @@ class TorchModel:
 
     def fit_generator(self, generator, epochs=2, val_data=None,
                       steps_per_epoch=100, verbose=True):
+        """Function to fit model from generator.
+
+        Parameters
+        ----------
+        generator: generator
+            Object to generate training batches.
+
+        epochs: int, optional
+            Number of epochs to train.
+
+        val_data: tuple, None, optional
+            Data `(x, y)` to perform validation steps. If `None`, will skip val steps.
+            
+        steps_per_epoch: int, optional
+            Steps model makes per one epoch.
+
+        verbose: bool
+            If `True`, will show the online progress of training process.
+            If `False`, will be silent.
+            
+        Returns
+        -------
+        history: dict
+            dict with stored losses and metrics (if `val_data` is not `None`) values.
+        """
         train_losses = []
         val_losses, val_metrics = [], []
 

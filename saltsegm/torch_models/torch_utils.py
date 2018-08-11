@@ -32,6 +32,19 @@ def to_var(x: np.ndarray, cuda: bool = None, requires_grad: bool = True) -> torc
 
 
 def calc_val_metric(true_t, pred_t, metric_fn):
+    """Calculates metric `metric_fn` during the validation step.
+    
+    Parameters
+    ----------
+    true_t: torch.DoubleTensor, torch.cuda.DoubleTensor
+        torch tensor corresponding to ground truth.
+        
+    pred_t: torch.DoubleTensor, torch.cuda.DoubleTensor
+        torch tensor corresponding to prediction.
+        
+    metric_fn: Callable
+        Function to calculate metric between two numpy tensors.
+    """
     true_np = to_np(true_t)
     pred_np = to_np(pred_t)
 

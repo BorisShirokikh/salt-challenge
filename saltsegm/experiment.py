@@ -90,6 +90,19 @@ def load_experiment_data(exp_path, n_val):
 
 
 def make_predictions(exp_path, n_val, model):
+    """Makes test predictions and saves them in `test_predictions` folder.
+
+    Parameters
+    ----------
+    exp_path: str
+        Path to the experiment.
+
+    n_val: int
+        The id of cross-val to make predictions in.
+
+    model: class
+        Model to make predictions with.
+    """
     config_path = os.path.join(exp_path, 'config.json')
 
     config = load_json(config_path)
@@ -115,6 +128,19 @@ def make_predictions(exp_path, n_val, model):
 
 
 def calculate_metrics(exp_path, n_val, metrics_dict):
+    """Calculates and saves test metric values in `test_metrics` folder.
+
+    Parameters
+    ----------
+    exp_path: str
+        Path to the experiment.
+
+    n_val: int
+        The id of cross-val to calculates metrics in.
+
+    metrics_dict: dict
+        dict contaning metrics names and functions.
+    """
     config_path = os.path.join(exp_path, 'config.json')
 
     config = load_json(config_path)
