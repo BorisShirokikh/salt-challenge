@@ -2,9 +2,12 @@ import random
 
 import numpy as np
 
+from .augmentation import augm_mirroring
+
 
 class BatchIter:
-    def __init__(self, train_ids, load_x, load_y, augm_fn, batch_size=32):
+    def __init__(self, train_ids, load_x, load_y, batch_size=32,
+                 mirroring_augm_prob=0.66):
         """Creates batch iterator both for keras and torch models.
 
         Parameters
@@ -18,11 +21,12 @@ class BatchIter:
         load_y: Callable
             `dataset` function to load masks.
 
-        augm_fn: Callable
-            Function to augment x/y pairs.
-
         batch_size: int, optional
             Size of generated batch.
+
+        mirroring_augm_prob: float, optional
+            Probability to apply mirroring augmentation. Uses function
+            `saltsegm.augmentation.augm_mirroring`.
         """
         self.train_ids = train_ids
 
@@ -38,7 +42,9 @@ class BatchIter:
         self.x_stack = np.array(x_stack, dtype='float32')
         self.y_stack = np.array(y_stack, dtype='float32')
 
-        self.augm_fn = augm_fn
+        assert mirroring_augm_prob >= 0 and mirroring_augm_prob <= 1, \
+            f'probability should be between 0 and 1, {mirroring_augm_prob} given'
+        self.mirroring_augm_prob = mirroring_augm_prob
 
         self.inner_ids = np.arange(len(train_ids))
 
@@ -52,5 +58,8 @@ class BatchIter:
                 index = random.choice(self.inner_ids)
                 x = self.x_stack[index]
                 y = self.y_stack[index]
-                batch_x[i], batch_y[i] = self.augm_fn(x, y)
+                
+                batch_x[i], batch_y[i] = augm_mirroring(
+                    x, y, prob_to_augm=self.mirroring_augm_prob
+                )
             yield batch_x, batch_y
