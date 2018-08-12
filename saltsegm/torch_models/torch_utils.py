@@ -53,3 +53,8 @@ def calc_val_metric(true_t, pred_t, metric_fn):
         metric_list.append(metric_fn(get_pred(t), get_pred(p)))
 
     return np.mean(metric_list)
+
+
+def logits2pred(logit):
+    """Transforms logit output to probability-like output."""
+    return logit.exp() / (logit.exp() + 1)

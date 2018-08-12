@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 
-from .torch_utils import to_var, to_np, calc_val_metric
+from .torch_utils import to_var, to_np, calc_val_metric, logits2pred
 
 
 class TorchModel:
@@ -44,7 +44,7 @@ class TorchModel:
     def do_train_step(self, x, y):
         """Model performs single train step."""
         self.model.train()
-        
+
         x_t = to_var(x)
         y_t = to_var(y, requires_grad=False)
 
@@ -60,14 +60,17 @@ class TorchModel:
     def do_val_step(self, x, y):
         """Model performs signle validation step."""
         self.model.eval()
-        
+
         x_t = to_var(x, requires_grad=False)
         y_t = to_var(y, requires_grad=False)
 
         with torch.no_grad():
-            pred = self.model(x_t)
+            logit = self.model(x_t)
 
-        loss = self.loss_fn(pred, y_t)
+        loss = self.loss_fn(logit, y_t)
+
+        pred = logits2pred(logit)
+
         metric = calc_val_metric(y_t, pred, self.metric_fn)
 
         return to_np(loss), metric
@@ -75,11 +78,13 @@ class TorchModel:
     def do_inf_step(self, x):
         """Model preforms single inference step."""
         self.model.eval()
-        
+
         x_t = to_var(x, requires_grad=False)
 
         with torch.no_grad():
-            pred = self.model(x_t)
+            logit = self.model(x_t)
+
+        pred = logits2pred(logit)
 
         return to_np(pred)
 
