@@ -8,7 +8,7 @@ from .torch_utils import to_var, to_np, calc_val_metric
 
 
 class TorchModel:
-    def __init__(self, model, loss_fn, metric_fn, optim, lr):
+    def __init__(self, model, loss_fn, metric_fn, optim, lr_scheduler=None):
         """Custom torch model class to handle basic operations.
 
         Parameters
@@ -32,9 +32,14 @@ class TorchModel:
         self.model = model
         self.loss_fn = loss_fn
         self.metric_fn = metric_fn
-        self.lr = lr
+
         # change to set_optimizer
-        self.optimizer = optim(self.model.parameters(), lr=self.lr)
+        self.optimizer = optim(self.model.parameters())
+
+        if not lr_scheduler is None:
+            self.lr_scheduler = lr_scheduler(self.optimizer)
+        else:
+            self.lr_scheduler = None
 
     def do_train_step(self, x, y):
         """Model performs single train step."""
@@ -65,7 +70,7 @@ class TorchModel:
 
     def do_inf_step(self, x):
         """Model preforms single inference step."""
-        x_t = to_var(x)
+        x_t = to_var(x, requires_grad=False)
 
         with torch.no_grad():
             pred = self.model(x_t)
@@ -99,6 +104,9 @@ class TorchModel:
         history: dict
             dict with stored losses and metrics (if `val_data` is not `None`) values.
         """
+        if val_data is None:
+            assert self.lr_scheduler is None, 'LR scheduler cannot be used without val data'
+
         train_losses = []
         val_losses, val_metrics = [], []
 
@@ -128,6 +136,9 @@ class TorchModel:
 
                     pbar.set_postfix(val_loss=l, val_metric=m)
                     pbar.update()
+                    
+                    if not self.lr_scheduler is None:
+                        self.lr_scheduler.step(l)
         # end for  
 
         if val_data is None:
