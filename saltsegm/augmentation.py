@@ -16,9 +16,9 @@ def augm_mirroring(x, y, prob_to_augm=0.66):
         axis_to_reverse = random.choice(dims)
 
         for i in range(len(x)):
-            x[i] = np.flip(x[i], -axis_to_reverse)
+            x[i] = np.flip(x[i], axis_to_reverse)
 
         for i in range(len(y)):
-            y[i] = np.flip(y[i], -axis_to_reverse)
+            y[i] = np.flip(y[i], axis_to_reverse)
 
     return x, y
