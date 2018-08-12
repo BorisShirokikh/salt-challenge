@@ -26,8 +26,8 @@ class TorchModel:
         optim: torch.optim, or the same
             Optimizer to do back propagation step.
 
-        lr: float
-            Learning rate.
+        lr_scheduler: torch.optim.lr_scheduler, or the same
+            Scheduler to control learning rate changing during the training.
         """
         self.model = model
         self.loss_fn = loss_fn
@@ -43,6 +43,8 @@ class TorchModel:
 
     def do_train_step(self, x, y):
         """Model performs single train step."""
+        self.model.train()
+        
         x_t = to_var(x)
         y_t = to_var(y, requires_grad=False)
 
@@ -57,6 +59,8 @@ class TorchModel:
 
     def do_val_step(self, x, y):
         """Model performs signle validation step."""
+        self.model.eval()
+        
         x_t = to_var(x, requires_grad=False)
         y_t = to_var(y, requires_grad=False)
 
@@ -70,6 +74,8 @@ class TorchModel:
 
     def do_inf_step(self, x):
         """Model preforms single inference step."""
+        self.model.eval()
+        
         x_t = to_var(x, requires_grad=False)
 
         with torch.no_grad():
