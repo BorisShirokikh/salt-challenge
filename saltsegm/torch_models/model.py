@@ -1,7 +1,4 @@
-import os
-
 import torch
-import torch.nn as nn
 from tqdm import tqdm
 
 from .torch_utils import to_var, to_np, calc_val_metric, logits2pred
