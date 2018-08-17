@@ -1,6 +1,6 @@
 """Full assembly of the sub-parts to form the complete net."""
 
-from .unet_modules import *
+from .unet_parts import *
 
 
 class UNet(nn.Module):
