@@ -6,19 +6,19 @@ from .unet_modules import *
 class UNet(nn.Module):
     def __init__(self, n_channels, n_classes):
         super(UNet, self).__init__()
-        self.inc = inconv(n_channels, 64)
-        self.down1 = down(64, 128)
-        self.down2 = down(128, 256)
-        self.down3 = down(256, 512)
-        self.down4 = down(512, 512)
-        self.up1 = up(1024, 256)
-        self.up2 = up(512, 128)
-        self.up3 = up(256, 64)
-        self.up4 = up(128, 64)
-        self.outc = outconv(64, n_classes)
+        self.inconv = InitConv(n_channels, 64)
+        self.down1 = DownBlock(64, 128)
+        self.down2 = DownBlock(128, 256)
+        self.down3 = DownBlock(256, 512)
+        self.down4 = DownBlock(512, 512)
+        self.up1 = UpBlock(1024, 256)
+        self.up2 = UpBlock(512, 128)
+        self.up3 = UpBlock(256, 64)
+        self.up4 = UpBlock(128, 64)
+        self.outconv = OutConv(64, n_classes)
 
     def forward(self, x):
-        x1 = self.inc(x)
+        x1 = self.inconv(x)
         x2 = self.down1(x1)
         x3 = self.down2(x2)
         x4 = self.down3(x3)
@@ -27,11 +27,11 @@ class UNet(nn.Module):
         x = self.up2(x, x3)
         x = self.up3(x, x2)
         x = self.up4(x, x1)
-        x = self.outc(x)
+        x = self.outconv(x)
         return x
 
 
-def get_UNet(n_channels=3, n_classes=1):
+def get_UNet(n_channels=1, n_classes=1):
     model = UNet(n_channels=n_channels, n_classes=n_classes)
     model.cuda()
     return model
