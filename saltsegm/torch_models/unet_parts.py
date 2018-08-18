@@ -56,22 +56,25 @@ class InitConv(nn.Module):
 
 
 class DownBlock(nn.Module):
-    def __init__(self, in_ch, out_ch, pool_type='Max'):
+    def __init__(self, in_ch, out_ch, dropout_rate=0, pool_type='Max'):
         """Block for downsampling and convolution in Unet"""
         assert pool_type in ('Max', 'Avg'), \
             f'block type should be Max or Avg, {pool_type} given'
 
         super(DownBlock, self).__init__()
 
-        conv_block = DoubleConv
-
         if pool_type == 'Max':
             pool_block = nn.MaxPool2d(2)
         elif pool_type == 'Avg':
             pool_block = nn.AvgPool2d(2)
 
+        dropout = nn.Dropout2d(p=dropout_rate, inplace=True)
+        
+        conv_block = DoubleConv
+
         self.pool_conv = nn.Sequential(
             pool_block,
+            dropout,
             conv_block(in_ch, out_ch)
         )
 
@@ -81,7 +84,7 @@ class DownBlock(nn.Module):
 
 
 class UpBlock(nn.Module):
-    def __init__(self, in_ch, out_ch, learnable_upsample=True):
+    def __init__(self, in_ch, out_ch, dropout_rate=0, learnable_upsample=True):
         """Block for upsampling, concat and conv in Unet"""
         super(UpBlock, self).__init__()
 
@@ -93,6 +96,8 @@ class UpBlock(nn.Module):
 
         conv_block = DoubleConv
         self.conv = conv_block(in_ch, out_ch)
+        
+        self.dropout = nn.Dropout2d(p=dropout_rate, inplace=True)
 
     def forward(self, x1, x2):
         x1 = self.up(x1)
@@ -104,6 +109,8 @@ class UpBlock(nn.Module):
                         diff_y // 2, int(diff_y / 2)))
 
         x = torch.cat([x2, x1], dim=1)
+        
+        x = self.dropout(x)
 
         x = self.conv(x)
 

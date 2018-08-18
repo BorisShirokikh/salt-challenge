@@ -4,18 +4,22 @@ from .unet_parts import *
 
 
 class UNet(nn.Module):
-    def __init__(self, n_channels, n_classes):
+    def __init__(self, n_channels, n_classes, dropout_rate=0):
         super(UNet, self).__init__()
-        self.inconv = InitConv(n_channels, 64)
-        self.down1 = DownBlock(64, 128)
-        self.down2 = DownBlock(128, 256)
-        self.down3 = DownBlock(256, 512)
-        self.down4 = DownBlock(512, 512)
-        self.up1 = UpBlock(1024, 256)
-        self.up2 = UpBlock(512, 128)
-        self.up3 = UpBlock(256, 64)
-        self.up4 = UpBlock(128, 64)
-        self.outconv = OutConv(64, n_classes)
+
+        self.inconv = InitConv(in_ch=n_channels, out_ch=64)
+
+        self.down1 = DownBlock(in_ch=64, out_ch=128, dropout_rate=dropout_rate)
+        self.down2 = DownBlock(in_ch=128, out_ch=256, dropout_rate=dropout_rate)
+        self.down3 = DownBlock(in_ch=256, out_ch=512, dropout_rate=dropout_rate)
+        self.down4 = DownBlock(in_ch=512, out_ch=512, dropout_rate=dropout_rate)
+
+        self.up1 = UpBlock(in_ch=512+512, out_ch=256, dropout_rate=dropout_rate)
+        self.up2 = UpBlock(in_ch=256+256, out_ch=128, dropout_rate=dropout_rate)
+        self.up3 = UpBlock(in_ch=128+128, out_ch=64, dropout_rate=dropout_rate)
+        self.up4 = UpBlock(in_ch=64+64, out_ch=64, dropout_rate=dropout_rate)
+
+        self.outconv = OutConv(in_ch=64, out_ch=n_classes)
 
     def forward(self, x):
         x1 = self.inconv(x)
@@ -31,7 +35,8 @@ class UNet(nn.Module):
         return x
 
 
-def get_UNet(n_channels=1, n_classes=1):
-    model = UNet(n_channels=n_channels, n_classes=n_classes)
+def get_UNet(n_channels=1, n_classes=1, dropout_rate=0):
+    model = UNet(n_channels=n_channels, n_classes=n_classes,
+                 dropout_rate=dropout_rate)
     model.cuda()
     return model
