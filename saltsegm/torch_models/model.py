@@ -52,7 +52,7 @@ class TorchModel:
         loss.backward()
         self.optimizer.step()
 
-        return to_np(loss)
+        return float(to_np(loss))
 
     def do_val_step(self, x, y):
         """Model performs signle validation step."""
@@ -70,7 +70,7 @@ class TorchModel:
 
         metric = calc_val_metric(y_t, pred, self.metric_fn)
 
-        return to_np(loss), metric
+        return float(to_np(loss)), metric
 
     def do_inf_step(self, x):
         """Model preforms single inference step."""
@@ -116,7 +116,7 @@ class TorchModel:
             assert self.lr_scheduler is None, 'LR scheduler cannot be used without val data'
 
         train_losses = []
-        val_losses, val_metrics = [], []
+        val_losses, val_metrics, val_lrs = [], [], []
 
         for n_ep in range(epochs):
 
@@ -147,6 +147,9 @@ class TorchModel:
                     
                     if not self.lr_scheduler is None:
                         self.lr_scheduler.step(l)
+                        
+                    lr = self.optimizer.param_groups[0]['lr']
+                    val_lrs.append(lr)
         # end for  
 
         if val_data is None:
@@ -154,4 +157,5 @@ class TorchModel:
         else:
             return {'train_losses': train_losses,
                     'val_losses': val_losses,
-                    'val_metrics': val_metrics}
+                    'val_metrics': val_metrics,
+                    'val_lrs': val_lrs}
