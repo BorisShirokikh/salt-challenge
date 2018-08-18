@@ -31,7 +31,7 @@ def main_metric(true: np.ndarray, pred: np.ndarray) -> float:
         metric = 0
         for th in threshholds:
             TP = int(th < iou)
-            FN = int(th > iou)
-            FP = int(th > iou)
+            FN = int(th >= iou)
+            FP = int(th >= iou)
             metric += TP / (TP + FN + FP)
         return metric / threshholds.shape[0]
