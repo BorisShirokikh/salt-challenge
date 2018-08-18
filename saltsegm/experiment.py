@@ -162,7 +162,7 @@ def get_experiment_result(exp_path, n_splits, metric_name):
     val_results = []
     
     for i in range(n_splits):
-        metric_path = os.path.join(EXP_PATH, f'experiment_{i}/test_metrics/{metric_name}.json')
+        metric_path = os.path.join(exp_path, f'experiment_{i}/test_metrics/{metric_name}.json')
         results_dict = load_json(metric_path)
 
         val_mean = np.mean(list(results_dict.values()))
