@@ -25,16 +25,18 @@ class DoubleConv(nn.Module):
 
 
 class ResBlock(nn.Module):
-    def __init__(self, in_ch, out_ch):
+    def __init__(self, in_ch, out_ch, kernel_size=3, padding=1):
         """Residual block."""
         super(ResBlock, self).__init__()
         self.conv = nn.Sequential(
             nn.BatchNorm2d(in_ch),
             nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels=in_ch, out_channels=out_ch, kernel_size=3, padding=1, bias=False),
+            nn.Conv2d(in_channels=in_ch, out_channels=out_ch, kernel_size=kernel_size,
+                      padding=padding, bias=False),
             nn.BatchNorm2d(out_ch),
             nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels=out_ch, out_channels=out_ch, kernel_size=3, padding=1, bias=False)
+            nn.Conv2d(in_channels=out_ch, out_channels=out_ch, kernel_size=kernel_size,
+                      padding=padding, bias=False)
         )
 
     def forward(self, x):
@@ -124,4 +126,24 @@ class OutConv(nn.Module):
 
     def forward(self, x):
         x = self.conv(x)
+        return x
+
+
+class ResHead(nn.Module):
+    def __init__(self, n_channels):
+        super(ResHead, self).__init__()
+        
+        conv_block = ResBlock
+        
+        self.res_block_1 = conv_block(in_ch=n_channels, out_ch=n_channels, kernel_size=3,
+                                      padding=1)
+        self.res_block_2 = conv_block(in_ch=n_channels, out_ch=n_channels, kernel_size=3,
+                                      padding=1)
+        self.res_block_final = conv_block(in_ch=n_channels, out_ch=n_channels,
+                                          kernel_size=1, padding=0)
+
+    def forward(self, x):
+        x = self.res_block_1(x)
+        x = self.res_block_2(x)
+        x = self.res_block_final(x)
         return x
