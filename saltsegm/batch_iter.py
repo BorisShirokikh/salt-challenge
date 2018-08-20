@@ -2,12 +2,12 @@ import random
 
 import numpy as np
 
-from .augmentation import augm_mirroring
+from .augmentation import augm_mirroring, augm_noise
 
 
 class BatchIter:
     def __init__(self, train_ids, load_x, load_y, batch_size=32,
-                 mirroring_augm_prob=0.66):
+                 mirroring_augm_prob=0.66, noise_augm_ratio=0.1):
         """Creates batch iterator both for keras and torch models.
 
         Parameters
@@ -27,6 +27,10 @@ class BatchIter:
         mirroring_augm_prob: float, optional
             Probability to apply mirroring augmentation. Uses function
             `saltsegm.augmentation.augm_mirroring`.
+            
+        noise_augm_ratio: float, optional
+            Ratio of noise applying to `x`. Uses function
+            `saltsegm.augmentation.augm_noise`.
         """
         self.train_ids = train_ids
 
@@ -47,6 +51,10 @@ class BatchIter:
             f'probability should be between 0 and 1, {mirroring_augm_prob} given'
         self.mirroring_augm_prob = mirroring_augm_prob
 
+        assert noise_augm_ratio >= 0 and noise_augm_ratio <= 1, \
+            f'Noise ratio should be between 0 and 1, {noise_augm_ratio} given'
+        self.noise_augm_ratio = noise_augm_ratio
+
         self.inner_ids = np.arange(len(train_ids))
 
     def flow(self):
@@ -60,7 +68,12 @@ class BatchIter:
                 x = self.x_stack[index]
                 y = self.y_stack[index]
                 
-                batch_x[i], batch_y[i] = augm_mirroring(
+                x_mirrored, batch_y[i] = augm_mirroring(
                     x, y, prob_to_augm=self.mirroring_augm_prob
                 )
+                
+                batch_x[i] = augm_noise(
+                    x_mirrored, noise_ratio=self.noise_augm_ratio
+                )
+
             yield batch_x, batch_y
