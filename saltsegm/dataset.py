@@ -5,7 +5,7 @@ import pandas as pd
 
 
 class Dataset:
-    def __init__(self, data_path, modalities=['image'], target='target'):
+    def __init__(self, data_path, modalities=['image'], features=None, target='target'):
         """Class of dataset, that supports the core methods to load ids, images and metadata.
 
         Parameters
@@ -16,11 +16,15 @@ class Dataset:
         modalities: list
             Names of modalities in metadata to load into x.
 
+        features: list, None, optional
+            Names of features in metadata to load into x.
+
         target: str
             Name of target in metadata to load into y.
         """
         self.data_path = data_path
         self.modalities = modalities
+        self.features = features
         self.target = target
 
         metadata_filename = os.path.join(data_path, 'metadata.csv')
@@ -30,6 +34,18 @@ class Dataset:
 
         self.ids = self.metadata.index
         self.names = self.metadata['id'].values
+
+        n_modalities = len(modalities)
+
+        self.features_max_values = []
+
+        self.n_channels = n_modalities
+
+        if features is None:
+            self.features_max_values = None
+        else:
+            n_features = len(features)
+            self.n_channels += n_features
 
 
     def load_x(self, _id):
@@ -49,6 +65,19 @@ class Dataset:
             assert x.shape == modality_shape, 'All modalities should have equal shapes'
 
             xs.append(x)
+
+        # TODO: add column to metadata with scaled depth :(
+        MAX_DEPTH_OF_SALT = 959.0
+
+        if self.features is not None:
+            for feature in self.features:
+                feature_value = self.metadata.iloc[_id][feature]
+                if feature == 'z':
+                    x = np.zeros(modality_shape) + float(feature_value) / MAX_DEPTH_OF_SALT
+                else:
+                    x = np.zeros(modality_shape) + feature_value
+
+                xs.append(x)
 
         return np.array(xs, dtype='float32')
 

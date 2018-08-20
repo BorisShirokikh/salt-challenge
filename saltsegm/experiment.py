@@ -25,6 +25,7 @@ def generate_experiment(exp_path, cv_splits, dataset):
 
     config = {'data_path': dataset.data_path,
               'modalities': dataset.modalities,
+              'features': dataset.features,
               'target': dataset.target,
               'n_splits': len(cv_splits)}
     dump_json(config, os.path.join(exp_path, 'config.json'))
@@ -57,7 +58,7 @@ def load_val_data(exp_path, n_val):
 
     config = load_json(config_path)
     ds = Dataset(data_path=config['data_path'], modalities=config['modalities'],
-                 target=config['target'])
+                 features=config['features'], target=config['target'])
 
     val_path = os.path.join(exp_path, f'experiment_{n_val}')
 
@@ -91,7 +92,7 @@ def make_predictions(exp_path, n_val, model):
 
     config = load_json(config_path)
     ds = Dataset(data_path=config['data_path'], modalities=config['modalities'],
-                 target=config['target'])
+                 features=config['features'], target=config['target'])
 
     val_path = os.path.join(exp_path, f'experiment_{n_val}')
 
@@ -129,7 +130,7 @@ def calculate_metrics(exp_path, n_val, metrics_dict):
 
     config = load_json(config_path)
     ds = Dataset(data_path=config['data_path'], modalities=config['modalities'],
-                 target=config['target'])
+                 features=config['features'], target=config['target'])
     
     val_path = os.path.join(exp_path, f'experiment_{n_val}')
     pred_path = os.path.join(val_path, 'test_predictions')

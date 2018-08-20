@@ -30,7 +30,8 @@ class BatchIter:
         """
         self.train_ids = train_ids
 
-        self.size = load_x(train_ids[0]).shape
+        self.x_size = load_x(train_ids[0]).shape
+        self.y_size = load_y(train_ids[0]).shape
 
         self.batch_size = batch_size
 
@@ -50,8 +51,8 @@ class BatchIter:
 
     def flow(self):
         """Generator."""
-        batch_x = np.array([np.zeros(self.size)] * self.batch_size, dtype='float32')
-        batch_y = np.array([np.zeros(self.size)] * self.batch_size, dtype='float32')
+        batch_x = np.array([np.zeros(self.x_size)] * self.batch_size, dtype='float32')
+        batch_y = np.array([np.zeros(self.y_size)] * self.batch_size, dtype='float32')
 
         while True:
             for i in range(self.batch_size):
