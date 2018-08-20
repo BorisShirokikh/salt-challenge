@@ -22,6 +22,8 @@ def generate_experiment(exp_path, cv_splits, dataset):
     """
     if not os.path.exists(exp_path):
         os.makedirs(exp_path)
+    else:
+        assert False, f'Experiment `{exp_path}` already exists.'
 
     config = {'data_path': dataset.data_path,
               'modalities': dataset.modalities,
@@ -155,6 +157,8 @@ def calculate_metrics(exp_path, n_val, metrics_dict):
         # end for
 
         metric_filename = os.path.join(metric_path, metric_name + '.json')
+        assert not os.path.exists(metric_filename), \
+            f'metric {metric_name} has already been calculated'
         dump_json(results, metric_filename)
     # end for
 
