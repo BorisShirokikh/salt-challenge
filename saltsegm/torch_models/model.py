@@ -47,12 +47,19 @@ class TorchModel:
 
         pred = self.model(x_t)
         loss = self.loss_fn(pred, y_t)
+        loss_to_return = float(to_np(loss))
 
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
-        return float(to_np(loss))
+        # free the memory
+        del x_t
+        del y_t
+        del pred
+        del loss
+
+        return loss_to_return
 
     def do_val_step(self, x, y):
         """Model performs signle validation step."""
@@ -65,12 +72,20 @@ class TorchModel:
             logit = self.model(x_t)
 
         loss = self.loss_fn(logit, y_t)
+        loss_to_return = float(to_np(loss))
 
         pred = logits2pred(logit)
 
         metric = calc_val_metric(y_t, pred, self.metric_fn)
 
-        return float(to_np(loss)), metric
+        # free the memory
+        del x_t
+        del y_t
+        del loss
+        del logit
+        del pred
+
+        return loss_to_return, metric
 
     def do_inf_step(self, x):
         """Model preforms single inference step."""
@@ -82,6 +97,11 @@ class TorchModel:
             logit = self.model(x_t)
 
         pred = logits2pred(logit)
+        pred_np = to_np(pred)
+
+        # free the memory
+        del x_t
+        del pred
 
         return to_np(pred)
 
