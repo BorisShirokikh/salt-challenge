@@ -66,17 +66,10 @@ class Dataset:
 
             xs.append(x)
 
-        # TODO: add column to metadata with scaled depth :(
-        MAX_DEPTH_OF_SALT = 959.0
-
         if self.features is not None:
             for feature in self.features:
                 feature_value = self.metadata.iloc[_id][feature]
-                if feature == 'z':
-                    x = np.zeros(modality_shape) + float(feature_value) / MAX_DEPTH_OF_SALT
-                else:
-                    x = np.zeros(modality_shape) + feature_value
-
+                x = np.zeros(modality_shape) + feature_value
                 xs.append(x)
 
         return np.array(xs, dtype='float32')
