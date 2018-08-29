@@ -50,7 +50,6 @@ class UNet(nn.Module):
 def get_UNet(n_channels=1, n_classes=1, n_filters=64, dropout_rate=0):
     model = UNet(n_channels=n_channels, n_classes=n_classes,
                  n_filters=n_filters, dropout_rate=dropout_rate)
-    model.cuda()
     return model
 
 
@@ -105,5 +104,4 @@ class UNetRes(nn.Module):
 def get_UNetRes(n_channels=1, n_classes=1, n_filters=64, dropout_rate=0):
     model = UNetRes(n_channels=n_channels, n_classes=n_classes,
                     n_filters=n_filters, dropout_rate=dropout_rate)
-    model.cuda()
     return model

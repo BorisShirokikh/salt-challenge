@@ -5,7 +5,8 @@ from .torch_utils import to_var, to_np, calc_val_metric, logits2pred
 
 
 class TorchModel:
-    def __init__(self, model, loss_fn, metric_fn, optim, lr_scheduler=None):
+    def __init__(self, model, loss_fn, metric_fn, optim, lr_scheduler=None,
+                 use_cuda=True):
         """Custom torch model class to handle basic operations.
 
         Parameters
@@ -27,6 +28,9 @@ class TorchModel:
             Scheduler to control learning rate changing during the training.
         """
         self.model = model
+        if use_cuda is True:
+            self.model.cuda()
+
         self.loss_fn = loss_fn
         self.metric_fn = metric_fn
 
@@ -38,12 +42,9 @@ class TorchModel:
         else:
             self.lr_scheduler = None
 
-    def do_train_step(self, x, y):
+    def do_train_step(self, x_t, y_t):
         """Model performs single train step."""
         self.model.train()
-
-        x_t = to_var(x)
-        y_t = to_var(y, requires_grad=False)
 
         pred = self.model(x_t)
         loss = self.loss_fn(pred, y_t)
@@ -53,20 +54,14 @@ class TorchModel:
         loss.backward()
         self.optimizer.step()
 
-        # free the memory
-        del x_t
-        del y_t
         del pred
         del loss
 
         return loss_to_return
 
-    def do_val_step(self, x, y):
-        """Model performs signle validation step."""
+    def do_val_step(self, x_t, y_t):
+        """Model performs single validation step."""
         self.model.eval()
-
-        x_t = to_var(x, requires_grad=False)
-        y_t = to_var(y, requires_grad=False)
 
         with torch.no_grad():
             logit = self.model(x_t)
@@ -78,9 +73,6 @@ class TorchModel:
 
         metric = calc_val_metric(y_t, pred, self.metric_fn)
 
-        # free the memory
-        del x_t
-        del y_t
         del loss
         del logit
         del pred
@@ -103,7 +95,7 @@ class TorchModel:
         del x_t
         del pred
 
-        return to_np(pred)
+        return pred_np
 
     def fit_generator(self, generator, epochs=2, val_data=None,
                       steps_per_epoch=100, verbose=True):
@@ -148,8 +140,14 @@ class TorchModel:
                 for n_step in range(steps_per_epoch):
                     x_batch, y_batch = next(generator)
 
-                    l = self.do_train_step(x_batch, y_batch)
+                    x_t = to_var(x_batch)
+                    y_t = to_var(y_batch, requires_grad=False)
+                    
+                    l = self.do_train_step(x_t, y_t)
                     train_losses.append(l)
+
+                    del x_t
+                    del y_t
 
                     if n_step % 10 == 0:
                         pbar.set_postfix(train_loss=l)
@@ -157,7 +155,13 @@ class TorchModel:
                 # end for
 
                 if not val_data is None:
-                    l, m = self.do_val_step(val_data[0], val_data[1])
+                    x_t = to_var(val_data[0], requires_grad=False)
+                    y_t = to_var(val_data[1], requires_grad=False)
+
+                    l, m = self.do_val_step(x_t, y_t)
+                    
+                    del x_t
+                    del y_t
 
                     val_losses.append(l)
                     val_metrics.append(m)
