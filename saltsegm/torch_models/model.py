@@ -4,6 +4,49 @@ from tqdm import tqdm
 from .torch_utils import to_var, to_np, calc_val_metric, logits2pred
 
 
+def do_train_step(x, y, model, optimizer, loss_fn):
+    model.train()
+
+    x_t = to_var(x)
+    y_t = to_var(y, requires_grad=False)
+
+    logits = model(x_t)
+    loss = loss_fn(logits, y_t)
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    loss_to_return = float(to_np(loss))
+
+    return loss_to_return
+
+
+def do_inf_step(x, model):
+    model.eval()
+    with torch.no_grad():
+        x_t = to_var(x)
+        return to_np(logits2pred(model(x_t)))
+
+
+def do_val_step(x, y, model, loss_fn, metric_fn):
+    model.eval()
+
+    x_t = to_var(x)
+    y_t = to_var(y, requires_grad=False)
+
+    with torch.no_grad():
+        logits = model(x_t)
+        y_pred = logits2pred(logits)
+
+        loss = loss_fn(logits, y_t)
+        loss_to_return = float(to_np(loss))
+
+        metric = calc_val_metric(y_t, y_pred, metric_fn)
+
+        return loss_to_return, metric
+
+
 class TorchModel:
     def __init__(self, model, loss_fn, metric_fn, optim, lr_scheduler=None,
                  use_cuda=True):
@@ -26,6 +69,9 @@ class TorchModel:
 
         lr_scheduler: torch.optim.lr_scheduler, or the same
             Scheduler to control learning rate changing during the training.
+
+        use_cuda: bool, optional
+            If `True`, calculates on the available gpu.
         """
         self.model = model
         if use_cuda is True:
@@ -42,60 +88,17 @@ class TorchModel:
         else:
             self.lr_scheduler = None
 
-    def do_train_step(self, x_t, y_t):
+    def do_train_step(self, x, y):
         """Model performs single train step."""
-        self.model.train()
+        return do_train_step(x, y, self.model, self.optimizer, self.loss_fn)
 
-        pred = self.model(x_t)
-        loss = self.loss_fn(pred, y_t)
-        loss_to_return = float(to_np(loss))
-
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
-
-        del pred
-        del loss
-
-        return loss_to_return
-
-    def do_val_step(self, x_t, y_t):
+    def do_val_step(self, x, y):
         """Model performs single validation step."""
-        self.model.eval()
-
-        with torch.no_grad():
-            logit = self.model(x_t)
-
-        loss = self.loss_fn(logit, y_t)
-        loss_to_return = float(to_np(loss))
-
-        pred = logits2pred(logit)
-
-        metric = calc_val_metric(y_t, pred, self.metric_fn)
-
-        del loss
-        del logit
-        del pred
-
-        return loss_to_return, metric
+        return do_val_step(x, y, self.model, self.loss_fn, self.metric_fn)
 
     def do_inf_step(self, x):
         """Model preforms single inference step."""
-        self.model.eval()
-
-        x_t = to_var(x, requires_grad=False)
-
-        with torch.no_grad():
-            logit = self.model(x_t)
-
-        pred = logits2pred(logit)
-        pred_np = to_np(pred)
-
-        # free the memory
-        del x_t
-        del pred
-
-        return pred_np
+        return do_inf_step(x, self.model)
 
     def fit_generator(self, generator, epochs=2, val_data=None,
                       steps_per_epoch=100, verbose=True):
@@ -139,29 +142,17 @@ class TorchModel:
 
                 for n_step in range(steps_per_epoch):
                     x_batch, y_batch = next(generator)
-
-                    x_t = to_var(x_batch)
-                    y_t = to_var(y_batch, requires_grad=False)
                     
-                    l = self.do_train_step(x_t, y_t)
+                    l = self.do_train_step(x_batch, y_batch)
                     train_losses.append(l)
-
-                    del x_t
-                    del y_t
 
                     if n_step % 10 == 0:
                         pbar.set_postfix(train_loss=l)
                     pbar.update()
                 # end for
 
-                if not val_data is None:
-                    x_t = to_var(val_data[0], requires_grad=False)
-                    y_t = to_var(val_data[1], requires_grad=False)
-
-                    l, m = self.do_val_step(x_t, y_t)
-                    
-                    del x_t
-                    del y_t
+                if val_data is not None:
+                    l, m = self.do_val_step(val_data[0], val_data[1])
 
                     val_losses.append(l)
                     val_metrics.append(m)
@@ -169,7 +160,7 @@ class TorchModel:
                     pbar.set_postfix(val_loss=l, val_metric=m)
                     pbar.update()
                     
-                    if not self.lr_scheduler is None:
+                    if self.lr_scheduler is not None:
                         self.lr_scheduler.step(l)
                         
                     lr = self.optimizer.param_groups[0]['lr']
