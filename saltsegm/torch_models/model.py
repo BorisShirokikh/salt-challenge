@@ -24,18 +24,19 @@ def do_train_step(x, y, model, optimizer, loss_fn):
 
 def do_inf_step(x, model):
     model.eval()
+
     with torch.no_grad():
-        x_t = to_var(x)
+        x_t = to_var(x, requires_grad=False)
         return to_np(logits2pred(model(x_t)))
 
 
 def do_val_step(x, y, model, loss_fn, metric_fn):
     model.eval()
 
-    x_t = to_var(x)
-    y_t = to_var(y, requires_grad=False)
-
     with torch.no_grad():
+        x_t = to_var(x, requires_grad=False)
+        y_t = to_var(y, requires_grad=False)
+
         logits = model(x_t)
         y_pred = logits2pred(logits)
 
@@ -83,7 +84,7 @@ class TorchModel:
         # change to set_optimizer
         self.optimizer = optim(self.model.parameters())
 
-        if not lr_scheduler is None:
+        if lr_scheduler is not None:
             self.lr_scheduler = lr_scheduler(self.optimizer)
         else:
             self.lr_scheduler = None
@@ -142,7 +143,7 @@ class TorchModel:
 
                 for n_step in range(steps_per_epoch):
                     x_batch, y_batch = next(generator)
-                    
+
                     l = self.do_train_step(x_batch, y_batch)
                     train_losses.append(l)
 
@@ -159,10 +160,10 @@ class TorchModel:
 
                     pbar.set_postfix(val_loss=l, val_metric=m)
                     pbar.update()
-                    
+
                     if self.lr_scheduler is not None:
-                        self.lr_scheduler.step(l)
-                        
+                        self.lr_scheduler.step(l, epoch=n_ep+1)
+
                     lr = self.optimizer.param_groups[0]['lr']
                     val_lrs.append(lr)
         # end for  
