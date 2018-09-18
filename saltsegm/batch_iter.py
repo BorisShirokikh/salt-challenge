@@ -1,13 +1,15 @@
 import random
 
 import numpy as np
+from tqdm import tqdm
 
 from .augmentation import augm_mirroring, augm_noise
 
 
 class BatchIter:
     def __init__(self, train_ids, load_x, load_y, batch_size=32,
-                 mirroring_augm_prob=0.66, noise_augm_ratio=0.1):
+                 mirroring_augm_prob=0.66, noise_augm_ratio=0.1,
+                 verbose_loading=True):
         """Creates batch iterator both for keras and torch models.
 
         Parameters
@@ -31,6 +33,9 @@ class BatchIter:
         noise_augm_ratio: float, optional
             Ratio of noise applying to `x`. Uses function
             `saltsegm.augmentation.augm_noise`.
+
+        verbose_loading: bool, optional
+            If `True`, showing progress of data loading.
         """
         self.train_ids = train_ids
 
@@ -41,9 +46,16 @@ class BatchIter:
 
         x_stack = []
         y_stack = []
-        for _id in train_ids:
-            x_stack.append(load_x(_id))
-            y_stack.append(load_y(_id))
+
+        if verbose_loading:
+            for _id in tqdm(train_ids):
+                x_stack.append(load_x(_id))
+                y_stack.append(load_y(_id))
+        else:
+            for _id in train_ids:
+                x_stack.append(load_x(_id))
+                y_stack.append(load_y(_id))
+
         self.x_stack = np.array(x_stack, dtype='float32')
         self.y_stack = np.array(y_stack, dtype='float32')
 
