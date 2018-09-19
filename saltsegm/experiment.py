@@ -1,11 +1,13 @@
 import os
 
 import numpy as np
+import pandas as pd
 import torch
+from tqdm import tqdm
 
 from .utils import load_json, dump_json, load_pred, get_pred
 from .torch_models.torch_utils import to_np, to_var, logits2pred
-from .dataset import Dataset
+from .dataset import Dataset, DatasetTest
 
 
 def generate_experiment(exp_path, cv_splits, dataset):
@@ -141,7 +143,7 @@ def get_experiment_result(exp_path, n_splits, metric_name):
     return np.mean(val_results)
 
 
-def do_inference(exp_path, n_val):
+def make_predictions(exp_path, n_val):
     """Makes test predictions and saves them in `test_predictions` folder.
 
     Parameters
@@ -176,7 +178,7 @@ def do_inference(exp_path, n_val):
         # DO INFERENCE STEP:
         with torch.no_grad():
             model.eval()
-            x_t = to_var([x], requires_grad=False)
+            x_t = to_var(np.array([x], dtype='float32'), requires_grad=False)
             y = to_np(logits2pred(model(x_t)))[0]
 
             y_filename = os.path.join(pred_path, _id_str + '.npy')
@@ -187,3 +189,35 @@ def do_inference(exp_path, n_val):
     # end for
 
     del model
+
+
+def test2predicts(prep_test_path, pred_test_path, model, modalities=['image'], features=None):
+
+    metadata = pd.read_csv(os.path.join(prep_test_path, 'metadata.csv'), index_col=[0])
+    test_ids = metadata['id'].values
+
+    ds = DatasetTest(prep_test_path, modalities=modalities, features=features)
+
+    for _id in tqdm(test_ids):
+        x = ds.load_x(_id)
+
+        # TODO: add not DL method of prediction
+
+        # *** DL methods ***
+        with torch.no_grad():
+            model = model.cuda()
+            model.eval()
+
+            pred = model(to_var(np.array([x], dtype='float32'), requires_grad=False))
+            # TODO: add sequence of models
+            pred = to_np(pred)
+
+        # TODO: add postprocessing
+
+        # *** Saving binarized predictions ***
+        path_to_save = os.path.join(pred_test_path, f'{_id}.npy')
+        np.save(path_to_save, pred[0])
+
+
+def predicts2csv(pred_test_path, threshold=0.5):
+    pass
