@@ -1,8 +1,10 @@
 import os
 
 import numpy as np
+import torch
 
 from .utils import load_json, dump_json, load_pred, get_pred
+from .torch_models.torch_utils import to_np, to_var, logits2pred
 from .dataset import Dataset
 
 
@@ -76,44 +78,6 @@ def load_val_data(exp_path, n_val):
     return x_val, y_val
 
 
-def make_predictions(exp_path, n_val, model):
-    """Makes test predictions and saves them in `test_predictions` folder.
-
-    Parameters
-    ----------
-    exp_path: str
-        Path to the experiment.
-
-    n_val: int
-        The id of cross-val to make predictions in.
-
-    model: class
-        Model to make predictions with.
-    """
-    config_path = os.path.join(exp_path, 'config.json')
-
-    config = load_json(config_path)
-    ds = Dataset(data_path=config['data_path'], modalities=config['modalities'],
-                 features=config['features'], target=config['target'])
-
-    val_path = os.path.join(exp_path, f'experiment_{n_val}')
-
-    pred_path = os.path.join(val_path, 'test_predictions')
-    if not os.path.exists(pred_path):
-        os.makedirs(pred_path)
-
-    test_ids_str = load_json(os.path.join(val_path, 'test_ids.json'))
-    test_ids = np.array(test_ids_str, dtype='int64')
-
-    for _id, _id_str in zip(test_ids, test_ids_str):
-        x = ds.load_x(_id)
-        y = model.do_inf_step([x])[0]
-
-        y_filename = os.path.join(pred_path, _id_str + '.npy')
-
-        np.save(y_filename, y)
-
-
 def calculate_metrics(exp_path, n_val, metrics_dict):
     """Calculates and saves test metric values in `test_metrics` folder.
 
@@ -175,3 +139,51 @@ def get_experiment_result(exp_path, n_splits, metric_name):
     # end for
     
     return np.mean(val_results)
+
+
+def do_inference(exp_path, n_val):
+    """Makes test predictions and saves them in `test_predictions` folder.
+
+    Parameters
+    ----------
+    exp_path: str
+        Path to the experiment.
+
+    n_val: int
+        The id of cross-val to make predictions in.
+    """
+    config_path = os.path.join(exp_path, 'config.json')
+
+    config = load_json(config_path)
+    ds = Dataset(data_path=config['data_path'], modalities=config['modalities'],
+                 features=config['features'], target=config['target'])
+
+    val_path = os.path.join(exp_path, f'experiment_{n_val}')
+
+    model = torch.load(os.path.join(val_path, 'model.pt'))
+    model = model.cuda()
+
+    pred_path = os.path.join(val_path, 'test_predictions')
+    if not os.path.exists(pred_path):
+        os.makedirs(pred_path)
+
+    test_ids_str = load_json(os.path.join(val_path, 'test_ids.json'))
+    test_ids = np.array(test_ids_str, dtype='int64')
+
+    for _id, _id_str in zip(test_ids, test_ids_str):
+        x = ds.load_x(_id)
+
+        # DO INFERENCE STEP:
+        with torch.no_grad():
+            model.eval()
+            x_t = to_var([x], requires_grad=False)
+            y = to_np(logits2pred(model(x_t)))[0]
+
+            y_filename = os.path.join(pred_path, _id_str + '.npy')
+
+            np.save(y_filename, y)
+
+            del x, x_t, y
+    # end for
+
+    del model

@@ -1,5 +1,7 @@
 import numpy as np
 
+from .utils import get_pred
+
 
 def fraction(numerator, denominator, empty_val: float = 1):
     assert numerator <= denominator, f'{numerator}, {denominator}'
@@ -35,3 +37,24 @@ def main_metric(true: np.ndarray, pred: np.ndarray) -> float:
             FP = int(th >= iou)
             metric += TP / (TP + FN + FP)
         return metric / threshholds.shape[0]
+
+
+def calc_val_metric(true, pred, metric_fn):
+    """Calculates metric `metric_fn` during the validation step.
+
+    Parameters
+    ----------
+    true: np.ndarray
+        numpy tensor corresponding to ground truth.
+
+    pred: np.ndarray
+        numpy tensor corresponding to prediction.
+
+    metric_fn: Callable
+        Function to calculate metric between two numpy tensors.
+    """
+    metric_list = []
+    for t, p in zip(true, pred):
+        metric_list.append(metric_fn(get_pred(t), get_pred(p)))
+
+    return np.mean(metric_list)

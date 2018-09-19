@@ -1,7 +1,8 @@
 import torch
 from tqdm import tqdm
 
-from .torch_utils import to_var, to_np, calc_val_metric, logits2pred
+from saltsegm.metrics import calc_val_metric
+from .torch_utils import to_var, to_np, logits2pred
 
 
 def do_train_step(x, y, model, optimizer, loss_fn):
@@ -16,24 +17,29 @@ def do_train_step(x, y, model, optimizer, loss_fn):
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
+    optimizer.zero_grad()
 
     loss_to_return = float(to_np(loss))
+
+    del model, x_t, y_t, logits, loss, optimizer
 
     return loss_to_return
 
 
 def do_inf_step(x, model):
-    model.eval()
-
     with torch.no_grad():
+        model.eval()
         x_t = to_var(x, requires_grad=False)
-        return to_np(logits2pred(model(x_t)))
+        pred = to_np(logits2pred(model(x_t)))
+
+    del x_t, model
+
+    return pred
 
 
 def do_val_step(x, y, model, loss_fn, metric_fn):
-    model.eval()
-
     with torch.no_grad():
+        model.eval()
         x_t = to_var(x, requires_grad=False)
         y_t = to_var(y, requires_grad=False)
 
@@ -43,14 +49,15 @@ def do_val_step(x, y, model, loss_fn, metric_fn):
         loss = loss_fn(logits, y_t)
         loss_to_return = float(to_np(loss))
 
-        metric = calc_val_metric(y_t, y_pred, metric_fn)
+    metric = calc_val_metric(to_np(y_t), to_np(y_pred), metric_fn)
 
-        return loss_to_return, metric
+    del model, x_t, y_t, logits, y_pred, loss
+
+    return loss_to_return, metric
 
 
 class TorchModel:
-    def __init__(self, model, loss_fn, metric_fn, optim, lr_scheduler=None,
-                 use_cuda=True):
+    def __init__(self, model, loss_fn, metric_fn, optim, lr_scheduler=None):
         """Custom torch model class to handle basic operations.
 
         Parameters
@@ -70,15 +77,10 @@ class TorchModel:
 
         lr_scheduler: torch.optim.lr_scheduler, or the same
             Scheduler to control learning rate changing during the training.
-
-        use_cuda: bool, optional
-            If `True`, calculates on the available gpu.
         """
-        self.model = model
-        if use_cuda is True:
-            self.model.cuda()
+        self.model = model.cuda()
 
-        self.loss_fn = loss_fn
+        self.loss_fn = loss_fn.cuda()
         self.metric_fn = metric_fn
 
         # change to set_optimizer
@@ -153,7 +155,9 @@ class TorchModel:
                 # end for
 
                 if val_data is not None:
-                    l, m = self.do_val_step(val_data[0], val_data[1])
+                    with torch.no_grad():
+                        l, m = self.do_val_step(val_data[0], val_data[1])
+                        self.optimizer.zero_grad()
 
                     val_losses.append(l)
                     val_metrics.append(m)

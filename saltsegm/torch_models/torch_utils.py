@@ -31,30 +31,6 @@ def to_var(x: np.ndarray, cuda: bool = None, requires_grad: bool = True) -> torc
     return to_cuda(x, cuda)
 
 
-def calc_val_metric(true_t, pred_t, metric_fn):
-    """Calculates metric `metric_fn` during the validation step.
-    
-    Parameters
-    ----------
-    true_t: torch.DoubleTensor, torch.cuda.DoubleTensor
-        torch tensor corresponding to ground truth.
-        
-    pred_t: torch.DoubleTensor, torch.cuda.DoubleTensor
-        torch tensor corresponding to prediction.
-        
-    metric_fn: Callable
-        Function to calculate metric between two numpy tensors.
-    """
-    true_np = to_np(true_t)
-    pred_np = to_np(pred_t)
-
-    metric_list = []
-    for t, p in zip(true_np, pred_np):
-        metric_list.append(metric_fn(get_pred(t), get_pred(p)))
-
-    return np.mean(metric_list)
-
-
 def logits2pred(logit):
     """Transforms logit output to probability-like output."""
     return logit.exp() / (logit.exp() + 1)
