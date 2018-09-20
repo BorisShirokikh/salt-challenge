@@ -1,15 +1,16 @@
 import torch
+from torch.autograd import Variable
 from tqdm import tqdm
 
 from saltsegm.metrics import calc_val_metric
-from .torch_utils import to_var, to_np, logits2pred
+from .torch_utils import to_np, logits2pred
 
 
 def do_train_step(x, y, model, optimizer, loss_fn):
     model.train()
 
-    x_t = to_var(x)
-    y_t = to_var(y, requires_grad=False)
+    x_t = Variable(torch.from_numpy(x), requires_grad=True, volatile=False).cuda()
+    y_t = Variable(torch.from_numpy(y), requires_grad=False, volatile=True).cuda()
 
     logits = model(x_t)
     loss = loss_fn(logits, y_t)
@@ -21,18 +22,14 @@ def do_train_step(x, y, model, optimizer, loss_fn):
 
     loss_to_return = float(to_np(loss))
 
-    del model, x_t, y_t, logits, loss, optimizer
-
     return loss_to_return
 
 
 def do_inf_step(x, model):
     with torch.no_grad():
         model.eval()
-        x_t = to_var(x, requires_grad=False)
+        x_t = Variable(torch.from_numpy(x), requires_grad=False, volatile=True).cuda()
         pred = to_np(logits2pred(model(x_t)))
-
-    del x_t, model
 
     return pred
 
@@ -40,8 +37,8 @@ def do_inf_step(x, model):
 def do_val_step(x, y, model, loss_fn, metric_fn):
     with torch.no_grad():
         model.eval()
-        x_t = to_var(x, requires_grad=False)
-        y_t = to_var(y, requires_grad=False)
+        x_t = Variable(torch.from_numpy(x), requires_grad=False, volatile=True).cuda()
+        y_t = Variable(torch.from_numpy(y), requires_grad=False, volatile=True).cuda()
 
         logits = model(x_t)
         y_pred = logits2pred(logits)
@@ -50,8 +47,6 @@ def do_val_step(x, y, model, loss_fn, metric_fn):
         loss_to_return = float(to_np(loss))
 
     metric = calc_val_metric(to_np(y_t), to_np(y_pred), metric_fn)
-
-    del model, x_t, y_t, logits, y_pred, loss
 
     return loss_to_return, metric
 
@@ -155,9 +150,7 @@ class TorchModel:
                 # end for
 
                 if val_data is not None:
-                    with torch.no_grad():
-                        l, m = self.do_val_step(val_data[0], val_data[1])
-                        self.optimizer.zero_grad()
+                    l, m = self.do_val_step(val_data[0], val_data[1])
 
                     val_losses.append(l)
                     val_metrics.append(m)
