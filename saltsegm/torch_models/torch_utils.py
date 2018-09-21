@@ -1,7 +1,6 @@
 import numpy as np
 import torch
-
-from saltsegm.utils import get_pred
+from torch.autograd import Variable
 
 
 def to_cuda(x, cuda: bool = None):
@@ -25,9 +24,8 @@ def to_var(x: np.ndarray, cuda: bool = None, requires_grad: bool = True) -> torc
         move tensor to cuda. If None, torch.cuda.is_available() is used to determine that.
     requires_grad: bool, optional
     """
-    x = torch.from_numpy(np.asarray(x))
-    if requires_grad:
-        x.requires_grad_()
+    x = Variable(torch.from_numpy(x),
+                 requires_grad=requires_grad, volatile=not requires_grad)
     return to_cuda(x, cuda)
 
 

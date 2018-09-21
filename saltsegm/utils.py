@@ -12,6 +12,16 @@ def get_pred(x, threshold=0.5):
     return x[0] > threshold
 
 
+def is_better(cur, best, mode):
+    """Checks if `cur` is better than `best` by mode `mode`."""
+    assert mode in ('min', 'max'), 'mode should be `max` or `min`'
+
+    if mode == 'min':
+        return cur < best
+    else:
+        return cur > best
+
+
 def ratio2groups(ratio, splitters=[0.01, 0.25, 0.5, 0.75]):
     """Return classes corresponding to `ratio`, splitted by `splitters`.
 

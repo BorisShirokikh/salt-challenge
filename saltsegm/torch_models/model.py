@@ -1,24 +1,26 @@
+import os
+from math import inf
+
 import torch
-from torch.autograd import Variable
 from tqdm import tqdm
 
 from saltsegm.metrics import calc_val_metric
-from .torch_utils import to_np, logits2pred
+from saltsegm.utils import is_better, dump_json
+from .torch_utils import to_np, to_var, logits2pred  # TODO: change to_var()
 
 
 def do_train_step(x, y, model, optimizer, loss_fn):
     model.train()
 
-    x_t = Variable(torch.from_numpy(x), requires_grad=True, volatile=False).cuda()
-    y_t = Variable(torch.from_numpy(y), requires_grad=False, volatile=True).cuda()
+    x = to_var(x)
+    y = to_var(y, requires_grad=False)
 
-    logits = model(x_t)
-    loss = loss_fn(logits, y_t)
+    logits = model(x)
+    loss = loss_fn(logits, y)
 
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
-    optimizer.zero_grad()
 
     loss_to_return = float(to_np(loss))
 
@@ -28,8 +30,8 @@ def do_train_step(x, y, model, optimizer, loss_fn):
 def do_inf_step(x, model):
     with torch.no_grad():
         model.eval()
-        x_t = Variable(torch.from_numpy(x), requires_grad=False, volatile=True).cuda()
-        pred = to_np(logits2pred(model(x_t)))
+        x = to_var(x, requires_grad=False)
+        pred = to_np(logits2pred(model(x)))
 
     return pred
 
@@ -37,16 +39,16 @@ def do_inf_step(x, model):
 def do_val_step(x, y, model, loss_fn, metric_fn):
     with torch.no_grad():
         model.eval()
-        x_t = Variable(torch.from_numpy(x), requires_grad=False, volatile=True).cuda()
-        y_t = Variable(torch.from_numpy(y), requires_grad=False, volatile=True).cuda()
+        x = to_var(x, requires_grad=False)
+        y = to_var(y, requires_grad=False)
 
-        logits = model(x_t)
+        logits = model(x)
         y_pred = logits2pred(logits)
 
-        loss = loss_fn(logits, y_t)
+        loss = loss_fn(logits, y)
         loss_to_return = float(to_np(loss))
 
-    metric = calc_val_metric(to_np(y_t), to_np(y_pred), metric_fn)
+    metric = calc_val_metric(to_np(y), to_np(y_pred), metric_fn)
 
     return loss_to_return, metric
 
@@ -78,7 +80,6 @@ class TorchModel:
         self.loss_fn = loss_fn.cuda()
         self.metric_fn = metric_fn
 
-        # change to set_optimizer
         self.optimizer = optim(self.model.parameters())
 
         if lr_scheduler is not None:
@@ -98,77 +99,114 @@ class TorchModel:
         """Model preforms single inference step."""
         return do_inf_step(x, self.model)
 
-    def fit_generator(self, generator, epochs=2, val_data=None,
-                      steps_per_epoch=100, verbose=True):
-        """Function to fit model from generator.
 
-        Parameters
-        ----------
-        generator: generator
-            Object to generate training batches.
+def fit_model(torch_model, generator, val_path, val_data=None, epochs=2, steps_per_epoch=100, verbose=True,
+              saving_model_mode='max'):
+    """Function to fit model from generator.
 
-        epochs: int, optional
-            Number of epochs to train.
+    Parameters
+    ----------
+    torch_model: TorchModel
+        Initialized model to fit.
 
-        val_data: tuple, None, optional
-            Data `(x, y)` to perform validation steps. If `None`, will skip val steps.
-            
-        steps_per_epoch: int, optional
-            Steps model makes per one epoch.
+    generator: generator
+        Object to generate training batches.
 
-        verbose: bool, optional
-            If `True`, will show the online progress of training process.
-            If `False`, will be silent.
-            
-        Returns
-        -------
-        history: dict
-            dict with stored losses and metrics (if `val_data` is not `None`) values.
-        """
-        if val_data is None:
-            assert self.lr_scheduler is None, 'LR scheduler cannot be used without val data'
+    epochs: int, optional
+        Number of epochs to train.
 
-        train_losses = []
-        val_losses, val_metrics, val_lrs = [], [], []
+    val_path: str
+        Path to save model.
 
-        for n_ep in range(epochs):
+    val_data: tuple, None, optional
+        Data `(x, y)` to perform validation steps. If `None`, will skip val steps.
 
-            pbar_div = 100
-            with tqdm(desc=f'epoch {n_ep+1}/{epochs}', total=steps_per_epoch,
-                      unit_divisor=steps_per_epoch // pbar_div, disable=not verbose,
-                      ) as pbar:
+    steps_per_epoch: int, optional
+        Steps model makes per one epoch.
 
-                for n_step in range(steps_per_epoch):
-                    x_batch, y_batch = next(generator)
+    verbose: bool, optional
+        If `True`, will show the online progress of training process.
+        If `False`, will be silent.
 
-                    l = do_train_step(x_batch, y_batch, self.model, self.optimizer, self.loss_fn)
-                    train_losses.append(l)
+    saving_model_mode: str, None, optional
+        If `None`, will save model after the last epoch.
+        If `min`, will save the latest model with the lowest loss after val step.
+        If `max`, will save the latest model with the highest metric after val step.
+    """
+    # *** Init stage ***
+    if val_data is None:
+        assert torch_model.lr_scheduler is None, 'LR scheduler cannot be used without val data'
 
-                    if n_step % 10 == 0:
-                        pbar.set_postfix(train_loss=l)
-                    pbar.update()
-                # end for
+    if saving_model_mode is not None:
+        assert saving_model_mode in ('min', 'max'), 'saving_model_mode should be `min` or `max`'
 
-                if val_data is not None:
-                    l, m = do_val_step(val_data[0], val_data[1], self.model, self.loss_fn, self.metric_fn)
+    best = None
+    if saving_model_mode == 'min':
+        best = -inf
+    elif saving_model_mode == 'max':
+        best = inf
 
-                    val_losses.append(l)
-                    val_metrics.append(m)
+    train_losses = []
+    val_losses, val_metrics, val_lrs = [], [], []
 
-                    pbar.set_postfix(val_loss=l, val_metric=m)
-                    pbar.update()
+    # *** train-val stage ***
+    for n_ep in range(epochs):
 
-                    if self.lr_scheduler is not None:
-                        self.lr_scheduler.step(l, epoch=n_ep+1)
+        pbar_div = 100
+        with tqdm(desc=f'epoch {n_ep+1}/{epochs}', total=steps_per_epoch,
+                  unit_divisor=steps_per_epoch // pbar_div, disable=not verbose,
+                  ) as pbar:
 
-                    lr = self.optimizer.param_groups[0]['lr']
-                    val_lrs.append(lr)
-        # end for  
+            # *** TRAIN STEPS ***
+            for n_step in range(steps_per_epoch):
+                x_batch, y_batch = next(generator)
 
-        if val_data is None:
-            return {'train_losses': train_losses}
-        else:
-            return {'train_losses': train_losses,
-                    'val_losses': val_losses,
-                    'val_metrics': val_metrics,
-                    'val_lrs': val_lrs}
+                l = torch_model.do_train_step(x_batch, y_batch)
+                train_losses.append(l)
+
+                if n_step % 10 == 0:
+                    pbar.set_postfix(train_loss=l)
+                pbar.update()
+            # end for
+
+            # *** VAL STEP ***
+            if val_data is not None:
+                l, m = torch_model.do_val_step(val_data[0], val_data[1])
+
+                val_losses.append(l)
+                val_metrics.append(m)
+
+                if torch_model.lr_scheduler is not None:
+                    torch_model.lr_scheduler.step(l, epoch=n_ep)
+
+                lr = torch_model.optimizer.param_groups[0]['lr']
+                val_lrs.append(lr)
+
+                pbar.set_postfix(val_loss=l, val_metric=m, lr=lr)
+                pbar.update()
+
+                # *** SAVING MODEL ***
+                cur = None
+                if saving_model_mode == 'min':
+                    cur = l
+                elif saving_model_mode == 'max':
+                    cur = m
+
+                if saving_model_mode is not None:
+                    if is_better(cur=cur, best=best, mode=saving_model_mode):
+                        torch.save(torch_model.model, os.path.join(val_path, 'model.pt'))
+    # end for
+
+    if saving_model_mode is None:
+        torch.save(torch_model.model, os.path.join(val_path, 'model.pt'))
+
+    # *** SAVING LOG ***
+    if val_data is None:
+        history = {'train_losses': train_losses}
+    else:
+        history = {'train_losses': train_losses,
+                   'val_losses': val_losses,
+                   'val_metrics': val_metrics,
+                   'val_lrs': val_lrs}
+
+    dump_json(history, os.path.join(val_path, 'log.json'))
