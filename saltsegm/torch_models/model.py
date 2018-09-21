@@ -116,7 +116,7 @@ class TorchModel:
         steps_per_epoch: int, optional
             Steps model makes per one epoch.
 
-        verbose: bool
+        verbose: bool, optional
             If `True`, will show the online progress of training process.
             If `False`, will be silent.
             
@@ -141,7 +141,7 @@ class TorchModel:
                 for n_step in range(steps_per_epoch):
                     x_batch, y_batch = next(generator)
 
-                    l = self.do_train_step(x_batch, y_batch)
+                    l = do_train_step(x_batch, y_batch, self.model, self.optimizer, self.loss_fn)
                     train_losses.append(l)
 
                     if n_step % 10 == 0:
@@ -150,7 +150,7 @@ class TorchModel:
                 # end for
 
                 if val_data is not None:
-                    l, m = self.do_val_step(val_data[0], val_data[1])
+                    l, m = do_val_step(val_data[0], val_data[1], self.model, self.loss_fn, self.metric_fn)
 
                     val_losses.append(l)
                     val_metrics.append(m)
