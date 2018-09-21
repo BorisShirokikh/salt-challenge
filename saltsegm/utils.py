@@ -59,7 +59,7 @@ def load_pred(identifier, predictions_path):
 
     Parameters
     ----------
-    identifier: int
+    identifier: int or str
         id to load.
 
     predictions_path: str
@@ -70,3 +70,37 @@ def load_pred(identifier, predictions_path):
     prediction: numpy.float32
     """
     return np.float32(np.load(os.path.join(predictions_path, f'{identifier}.npy')))
+
+
+def rl_enc(pred, order='F', return_string=True):
+    """Convert binary 2-dim prediction to run-length array or string.
+
+    Parameters
+    ----------
+    pred: np.ndarray
+        2-dim array of predictions
+
+    order: str, optional
+        Is down-then-right, i.e. Fortran(F)
+
+    return_string: bool, optional
+        Return in `str` or `np.ndarray` dtypes.
+
+    Returns
+    -------
+    rl_array: str, np.ndarray
+        Run-length as a string: <start[1s] length[1s] ... ...> if `return_string` is `True`, else returns
+        the same numpy array.
+    """
+    bytez = pred.reshape(pred.shape[0] * pred.shape[1], order=order)
+    bytez = np.concatenate([[0], bytez, [0]])
+
+    runs = np.where(bytez[1:] != bytez[:-1])[0] + 1  # pos start at 1
+    runs[1::2] -= runs[::2]
+
+    if return_string:
+        rl_array = ' '.join(str(x) for x in runs)
+    else:
+        rl_array = runs  # not sure about this
+
+    return rl_array

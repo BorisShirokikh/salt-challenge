@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
-from .utils import load_json, dump_json, load_pred, get_pred
+from .utils import load_json, dump_json, load_pred, get_pred, rl_enc
 from .torch_models.torch_utils import to_np, to_var, logits2pred
 from .dataset import Dataset, DatasetTest
 
@@ -92,7 +92,7 @@ def calculate_metrics(exp_path, n_val, metrics_dict):
         The id of cross-val to calculates metrics in.
 
     metrics_dict: dict
-        dict contaning metrics names and functions.
+        dict containing metrics names and functions.
     """
     config_path = os.path.join(exp_path, 'config.json')
 
@@ -188,15 +188,33 @@ def make_predictions(exp_path, n_val):
             del x, x_t, y
     # end for
 
-    del model
 
+def test2csv_pred(prep_test_path, csv_filename, model, modalities=['image'], features=None):
+    """Converts test images with given `model` into submission-ready csv-file.
 
-def test2predicts(prep_test_path, pred_test_path, model, modalities=['image'], features=None):
+    Parameters
+    ----------
+    prep_test_path: str
+        Path to stored test data with generated `metadata`.
 
+    csv_filename: str
+        Filename of csv-file to save. Should have 'some_name.csv' structure.
+
+    model: torch.nn.Module, or the same
+        Model to do predictions with.
+
+    modalities: list, optional
+        List of modalities to load as channel(s) of the single image.
+
+    features: list, optional
+        List of features to load as additional channel(s) of the single image.
+    """
     metadata = pd.read_csv(os.path.join(prep_test_path, 'metadata.csv'), index_col=[0])
     test_ids = metadata['id'].values
 
     ds = DatasetTest(prep_test_path, modalities=modalities, features=features)
+
+    id_rle_dict = {}
 
     for _id in tqdm(test_ids):
         x = ds.load_x(_id)
@@ -214,10 +232,16 @@ def test2predicts(prep_test_path, pred_test_path, model, modalities=['image'], f
 
         # TODO: add postprocessing
 
-        # *** Saving binarized predictions ***
-        path_to_save = os.path.join(pred_test_path, f'{_id}.npy')
-        np.save(path_to_save, pred[0])
+        # *** Encoding binarized predictions ***
+        rle_pred = rl_enc(pred[0])
+        id_rle_dict[_id] = rle_pred
 
+    # end for
 
-def predicts2csv(pred_test_path, threshold=0.5):
-    pass
+    # *** Saving submission csv-file ***
+    csv_to_save = pd.DataFrame.from_dict(id_rle_dict, orient='index')
+
+    csv_to_save.index.names = ['id']
+    csv_to_save.columns = ['rle_mask']
+
+    csv_to_save.to_csv(os.path.join(prep_test_path, csv_filename))
