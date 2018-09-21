@@ -10,7 +10,7 @@ from .torch_models.torch_utils import to_np, to_var, logits2pred
 from .dataset import Dataset, DatasetTest
 
 
-def generate_experiment(exp_path, cv_splits, dataset):
+def generate_experiment(exp_path, cv_splits, dataset, exp_type='tvt'):
     """Generates experiment with given parameters. Main information saves in config.
 
     Parameters
@@ -23,17 +23,24 @@ def generate_experiment(exp_path, cv_splits, dataset):
 
     dataset: class
         Dataset like object.
+
+    exp_type: str
+        Type of experiment: train-val-test (`tvt`) or train-val (`tv`).
     """
     if not os.path.exists(exp_path):
         os.makedirs(exp_path)
     else:
         assert False, f'Experiment `{exp_path}` already exists.'
 
+    assert exp_type in ('tvt', 'tv'), \
+        f'experiment type should be `tvt` or `tv`, {exp_type} given'
+
     config = {'data_path': dataset.data_path,
               'modalities': dataset.modalities,
               'features': dataset.features,
               'target': dataset.target,
-              'n_splits': len(cv_splits)}
+              'n_splits': len(cv_splits),
+              'exp_type': exp_type}
     dump_json(config, os.path.join(exp_path, 'config.json'))
 
     for i, split in enumerate(cv_splits):
@@ -42,7 +49,11 @@ def generate_experiment(exp_path, cv_splits, dataset):
 
         dump_json(list(np.array(split['train_ids'], dtype='str')), os.path.join(val_path, 'train_ids.json'))
         dump_json(list(np.array(split['val_ids'], dtype='str')), os.path.join(val_path, 'val_ids.json'))
-        dump_json(list(np.array(split['test_ids'], dtype='str')), os.path.join(val_path, 'test_ids.json'))
+
+        if exp_type == 'tvt':
+            dump_json(list(np.array(split['test_ids'], dtype='str')), os.path.join(val_path, 'test_ids.json'))
+        elif exp_type == 'tv':
+            pass
 
 
 def load_val_data(exp_path, n_val):
