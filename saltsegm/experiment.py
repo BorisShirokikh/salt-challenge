@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import torch
 from tqdm import tqdm
+from skimage.transform import resize
 
 from .utils import load_json, dump_json, load_pred, get_pred, rl_enc
 from .torch_models.torch_utils import to_np, to_var, logits2pred
@@ -239,12 +240,20 @@ def test2csv_pred(prep_test_path, csv_filename, model, modalities=['image'], fea
 
             pred = model(to_var(np.array([x], dtype='float32'), requires_grad=False))
             # TODO: add sequence of models
-            pred = to_np(pred)
+            pred = to_np(pred)[0]
 
         # TODO: add postprocessing
 
+        # converting to 2-dim numpy array (image-like) of original shape (101x101)
+        if len(pred.shape) == 3:
+            pred = pred[0]
+
+        ORIG_SIZE = 101
+        if pred.shape[-1] != ORIG_SIZE:
+            pred = resize(pred, output_shape=(ORIG_SIZE, ORIG_SIZE), order=3, preserve_range=True)
+
         # *** Encoding binarized predictions ***
-        rle_pred = rl_enc(pred[0])
+        rle_pred = rl_enc(pred)
         id_rle_dict[_id] = rle_pred
 
     # end for
