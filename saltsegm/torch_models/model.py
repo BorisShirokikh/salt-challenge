@@ -142,9 +142,9 @@ def fit_model(torch_model, generator, val_path, val_data=None, epochs=2, steps_p
 
     best = None
     if saving_model_mode == 'min':
-        best = -inf
-    elif saving_model_mode == 'max':
         best = inf
+    elif saving_model_mode == 'max':
+        best = -inf
 
     train_losses = []
     val_losses, val_metrics, val_lrs = [], [], []
