@@ -18,7 +18,7 @@ def get_points_of_interest(exp_path : str):
     being tuple (epoch, value)
     """
     # maybe define load_log function?
-    log = load_json(os.path.join(exp_path, r'/log.json'))
+    log = load_json(os.path.join(exp_path, 'log.json'))
     val_losses = log['val_losses']
     val_metrics = log['val_metrics']
 
