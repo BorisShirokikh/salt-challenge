@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import os
 
 
+# TODO exp_path should contain folders experiment_N, which are to be parsed
 def get_points_of_interest(exp_path : str):
     """
     Return max validation metrics and min loss.
@@ -27,6 +28,7 @@ def get_points_of_interest(exp_path : str):
     return max_metric, min_loss
 
 
+# TODO exp_path should contain folders experiment_N, which are to be parsed
 def plot_metrics(exp_path : str, highlight=True):
     """
     Plots validation loss, validation metrics and learning rates
@@ -44,7 +46,7 @@ def plot_metrics(exp_path : str, highlight=True):
         max_metric, min_loss = get_points_of_interest(exp_path)
 
     # maybe define load_log function?
-    log = load_json(os.path.join(exp_path, r'/log.json'))
+    log = load_json(os.path.join(exp_path, 'log.json'))
     val_losses = log['val_losses']
     val_metrics = log['val_metrics']
     val_lrs = log['val_lrs']
