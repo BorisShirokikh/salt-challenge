@@ -1,5 +1,6 @@
 from .utils import load_json
 import matplotlib.pyplot as plt
+import os
 
 
 def get_points_of_interest(exp_path : str):
