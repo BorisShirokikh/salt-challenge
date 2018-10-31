@@ -6,7 +6,7 @@ from .utils import load_json
 
 
 # TODO exp_path should contain folders experiment_N, which are to be parsed
-def get_points_of_interest(exp_path : str):
+def get_points_of_interest(exp_path : str, n_val : int):
     """
     Return max validation metrics and min loss.
 
@@ -15,13 +15,17 @@ def get_points_of_interest(exp_path : str):
     exp_path : str
         Path to the experiment folder, containing log.json
 
+    n_val : int
+        Validation split number, required to access experiment_{n_val} folder
+
     Returns
     -------
     tuple (max_val_metrics, min loss) with each element
     being tuple (epoch, value)
     """
+    val_path = os.path.join(exp_path, f'experiment_{n_val}')
     # maybe define load_log function?
-    log = load_json(os.path.join(exp_path, 'log.json'))
+    log = load_json(os.path.join(val_path, 'log.json'))
     val_losses = log['val_losses']
     val_metrics = log['val_metrics']
 
