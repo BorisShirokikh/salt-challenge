@@ -66,6 +66,13 @@ def dump_json(value, path: str, *, indent: int = None):
     """Dump a json-serializable object to a json file."""
     with open(path, 'w') as f:
         return json.dump(value, f, indent=indent)
+    
+    
+def load_config(exp_path: str):
+    """Returns config from generated experiment."""
+    config_path = os.path.join(exp_path, 'config.json')
+    config = load_json(config_path)
+    return config
 
 
 def load_pred(identifier, predictions_path):
