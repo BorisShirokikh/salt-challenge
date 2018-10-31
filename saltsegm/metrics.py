@@ -17,7 +17,7 @@ def dice_score(x: np.ndarray, y: np.ndarray) -> float:
     return fraction(2 * np.sum(x & y), np.sum(x) + np.sum(y))
 
 
-def main_metric(true: np.ndarray, pred: np.ndarray) -> float:
+def average_iou(true: np.ndarray, pred: np.ndarray) -> float:
     assert true.dtype == bool and pred.dtype == bool, \
         'input array should have bool dtype, {true.dtype} {pred.dtype} are given'
         
@@ -29,14 +29,14 @@ def main_metric(true: np.ndarray, pred: np.ndarray) -> float:
         return 0
     else:
         iou = np.sum(true & pred) / np.sum(true | pred)
-        threshholds = np.arange(0.5, 1, 0.05)
+        thresholds = np.arange(0.5, 1, 0.05)
         metric = 0
-        for th in threshholds:
+        for th in thresholds:
             TP = int(th < iou)
             FN = int(th >= iou)
             FP = int(th >= iou)
             metric += TP / (TP + FN + FP)
-        return metric / threshholds.shape[0]
+        return metric / thresholds.shape[0]
 
 
 def calc_val_metric(true, pred, metric_fn):

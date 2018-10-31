@@ -8,8 +8,13 @@ def id2png(_id):
     return _id + '.png'
 
 
-def get_pred(x, threshold=0.5):
-    return x[0] > threshold
+def get_pred(x, threshold=0.5, apply_scaling=False):
+    x_spatial = x[0]
+
+    if apply_scaling:
+        x_spatial = x_spatial / np.max(x_spatial)
+
+    return x_spatial > threshold
 
 
 def is_better(cur, best, mode):
