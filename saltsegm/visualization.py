@@ -53,7 +53,7 @@ def plot_metrics(exp_path : str, n_val : int, highlight=True):
     """
     val_path = os.path.join(exp_path, f'experiment_{n_val}')
     if highlight:
-        max_metric, min_loss = get_points_of_interest(exp_path)
+        max_metric, min_loss = get_points_of_interest(exp_path, n_val)
 
     # maybe define load_log function?
     log = load_json(val_path)
