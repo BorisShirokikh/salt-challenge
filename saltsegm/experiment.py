@@ -104,7 +104,8 @@ def calculate_metrics(exp_path, n_val, metrics_dict):
         The id of cross-val to calculates metrics in.
 
     metrics_dict: dict
-        dict containing metrics names and functions.
+        dict containing metrics names which map into (`function`, `apply_scaling`).
+        `apply_scaling` is `bool` value indicates apply or not the scaling on prediction.
     """
     config_path = os.path.join(exp_path, 'config.json')
 
@@ -123,11 +124,11 @@ def calculate_metrics(exp_path, n_val, metrics_dict):
     test_ids = np.array(test_ids_str, dtype='int64')
     
     for metric_name in metrics_dict.keys():
-        metric_fn = metrics_dict[metric_name]
+        metric_fn, apply_scaling = metrics_dict[metric_name]
         
         results = {}
         for _id, _id_str in zip(test_ids, test_ids_str):
-            pred = get_pred(load_pred(_id, pred_path))
+            pred = get_pred(load_pred(_id, pred_path), apply_scaling=apply_scaling)
             mask = get_pred(ds.load_y(_id))
             
             result = metric_fn(mask, pred)
@@ -201,7 +202,8 @@ def make_predictions(exp_path, n_val):
     # end for
 
 
-def test2csv_pred(prep_test_path, csv_filename, model, modalities=['image'], features=None):
+def test2csv_pred(prep_test_path, csv_filename, model, modalities=['image'], features=None,
+                  threshold=0.5):
     """Converts test images with given `model` into submission-ready csv-file.
 
     Parameters
@@ -220,9 +222,13 @@ def test2csv_pred(prep_test_path, csv_filename, model, modalities=['image'], fea
 
     features: list, optional
         List of features to load as additional channel(s) of the single image.
+
+    threshold: float
+        Threshold to make binary prediction. Must be between 0. and 1.
     """
     metadata = pd.read_csv(os.path.join(prep_test_path, 'metadata.csv'), index_col=[0])
-    test_ids = metadata['id'].values
+    test_ids = metadata.index
+    test_ids_orig = metadata['id'].values
 
     ds = DatasetTest(prep_test_path, modalities=modalities, features=features)
 
@@ -245,16 +251,19 @@ def test2csv_pred(prep_test_path, csv_filename, model, modalities=['image'], fea
         # TODO: add postprocessing
 
         # converting to 2-dim numpy array (image-like) of original shape (101x101)
+        # then to binary predictions
         if len(pred.shape) == 3:
             pred = pred[0]
 
         ORIG_SIZE = 101
         if pred.shape[-1] != ORIG_SIZE:
             pred = resize(pred, output_shape=(ORIG_SIZE, ORIG_SIZE), order=3, preserve_range=True)
+            
+        pred = pred > threshold
 
         # *** Encoding binarized predictions ***
         rle_pred = rl_enc(pred)
-        id_rle_dict[_id] = rle_pred
+        id_rle_dict[test_ids_orig[_id]] = rle_pred
 
     # end for
 

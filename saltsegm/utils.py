@@ -8,8 +8,13 @@ def id2png(_id):
     return _id + '.png'
 
 
-def get_pred(x, threshold=0.5):
-    return x[0] > threshold
+def get_pred(x, threshold=0.5, apply_scaling=False):
+    x_spatial = x[0]
+
+    if apply_scaling:
+        x_spatial = x_spatial / np.max(x_spatial)
+
+    return x_spatial > threshold
 
 
 def is_better(cur, best, mode):
@@ -61,6 +66,13 @@ def dump_json(value, path: str, *, indent: int = None):
     """Dump a json-serializable object to a json file."""
     with open(path, 'w') as f:
         return json.dump(value, f, indent=indent)
+    
+    
+def load_config(exp_path: str):
+    """Returns config from generated experiment."""
+    config_path = os.path.join(exp_path, 'config.json')
+    config = load_json(config_path)
+    return config
 
 
 def load_pred(identifier, predictions_path):

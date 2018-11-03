@@ -22,7 +22,7 @@ def do_train_step(x, y, model, optimizer, loss_fn):
     loss.backward()
     optimizer.step()
 
-    loss_to_return = float(to_np(loss))
+    loss_to_return = float(loss.item())
 
     return loss_to_return
 
@@ -46,9 +46,12 @@ def do_val_step(x, y, model, loss_fn, metric_fn):
         y_pred = logits2pred(logits)
 
         loss = loss_fn(logits, y)
-        loss_to_return = float(to_np(loss))
+        loss_to_return = float(loss.item())
 
     metric = calc_val_metric(to_np(y), to_np(y_pred), metric_fn)
+
+    del x, y, loss
+    torch.cuda.empty_cache()
 
     return loss_to_return, metric
 
@@ -168,6 +171,7 @@ def fit_model(torch_model, generator, val_path, val_data=None, epochs=2, steps_p
                     pbar.set_postfix(train_loss=l)
                 pbar.update()
             # end for
+            torch.cuda.empty_cache()
 
             # *** VAL STEP ***
             if val_data is not None:
