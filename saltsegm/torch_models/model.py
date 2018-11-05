@@ -78,17 +78,23 @@ class TorchModel:
         lr_scheduler: torch.optim.lr_scheduler, or the same
             Scheduler to control learning rate changing during the training.
         """
-        self.model = model.cuda()
+        self.model = model
 
-        self.loss_fn = loss_fn.cuda()
+        self.loss_fn = loss_fn
         self.metric_fn = metric_fn
 
+        self.optim = optim
         self.optimizer = optim(self.model.parameters())
 
         if lr_scheduler is not None:
             self.lr_scheduler = lr_scheduler(self.optimizer)
         else:
             self.lr_scheduler = None
+
+    def to_cuda(self):
+        self.model.cuda()
+        self.loss_fn.cuda()
+        self.optimizer = self.optim(self.model.parameters())
 
     def do_train_step(self, x, y):
         """Model performs single train step."""
@@ -142,6 +148,8 @@ def fit_model(torch_model, generator, val_path, val_data=None, epochs=2, steps_p
 
     if saving_model_mode is not None:
         assert saving_model_mode in ('min', 'max'), 'saving_model_mode should be `min` or `max`'
+
+    torch_model.to_cuda()
 
     best = None
     if saving_model_mode == 'min':

@@ -1,5 +1,7 @@
 import os
 import json
+import pickle
+import gzip
 
 import numpy as np
 
@@ -49,7 +51,7 @@ def ratio2groups(ratio, splitters=[0.01, 0.25, 0.5, 0.75]):
 
     if len(splitters) > 1:
         for i, value in enumerate(splitters[1:]):
-            groups[(ratio > splitters[i]) & (ratio <= splitters[i+1])] = i + 1
+            groups[(ratio > splitters[i]) & (ratio <= splitters[i + 1])] = i + 1
 
     groups[ratio > splitters[-1]] = len(splitters)
 
@@ -66,8 +68,8 @@ def dump_json(value, path: str, *, indent: int = None):
     """Dump a json-serializable object to a json file."""
     with open(path, 'w') as f:
         return json.dump(value, f, indent=indent)
-    
-    
+
+
 def load_config(exp_path: str):
     """Returns config from generated experiment."""
     config_path = os.path.join(exp_path, 'config.json')
@@ -133,3 +135,60 @@ def rl_enc(pred, order='F', return_string=True):
         rl_array = runs  # not sure about this
 
     return rl_array
+
+
+def save(obj, path, filename, gz=None):
+    """Pickle a pythonic `obj` into a file given by `path`.
+
+    Parameters
+    ----------
+    obj: any python object
+        An object to pickle.
+
+    path: string
+        A file in which to pickle the object.
+
+    filename: string
+        Specify filename for re-building experiments results.
+
+    gz: integer, or None, optional
+        If None, then does not apply compression while pickling. Otherwise
+        must be an integer 0-9 which determines the level of GZip compression:
+        the lower the level the less thorough but the more faster the
+        compression is. Value `0` produces a GZip archive with no compression
+        whatsoever, whereas the value of `9` produces the most compressed archive.
+    """
+    if not (gz is None or (isinstance(gz, int) and 0 <= gz <= 9)):
+        raise TypeError("""`gz` parameter must be either `None` """
+                        """or an integer 0-9.""")
+
+    if not os.path.isdir(path):
+        os.makedirs(path)
+    path_to_file = os.path.join(path, filename)
+
+    open_ = open if gz is None else lambda f, m: gzip.open(f, m, gz)
+    filename_ = "%s%s" % (path_to_file, '.pic' if gz is None else '.gz')
+
+    with open_(filename_, "wb+") as f:
+        pickle.dump(obj, f)
+
+
+def load(filename):
+    """Recover an object from the file identified by `filename`.
+
+    Parameters
+    ----------
+    filename: string
+        A `file` in which an object is pickled.
+
+    Returns
+    -------
+    object: a python object
+        The recovered pythonic object.
+    """
+    open_ = open if not filename.endswith(".gz") else gzip.open
+
+    with open_(filename, "rb") as f:
+        obj = pickle.load(f)
+
+    return obj

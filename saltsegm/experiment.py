@@ -6,8 +6,9 @@ import torch
 from tqdm import tqdm
 from skimage.transform import resize
 
-from .utils import load_json, dump_json, load_pred, get_pred, rl_enc
+from .utils import load_json, dump_json, load_pred, get_pred, rl_enc, load
 from .torch_models.torch_utils import to_np, to_var, logits2pred
+from .torch_models.model import fit_model
 from .dataset import Dataset, DatasetTest
 
 
@@ -112,25 +113,25 @@ def calculate_metrics(exp_path, n_val, metrics_dict):
     config = load_json(config_path)
     ds = Dataset(data_path=config['data_path'], modalities=config['modalities'],
                  features=config['features'], target=config['target'])
-    
+
     val_path = os.path.join(exp_path, f'experiment_{n_val}')
     pred_path = os.path.join(val_path, 'test_predictions')
-    
+
     metric_path = os.path.join(val_path, 'test_metrics')
     if not os.path.exists(metric_path):
         os.makedirs(metric_path)
 
     test_ids_str = load_json(os.path.join(val_path, 'test_ids.json'))
     test_ids = np.array(test_ids_str, dtype='int64')
-    
+
     for metric_name in metrics_dict.keys():
         metric_fn, apply_scaling = metrics_dict[metric_name]
-        
+
         results = {}
         for _id, _id_str in zip(test_ids, test_ids_str):
             pred = get_pred(load_pred(_id, pred_path), apply_scaling=apply_scaling)
             mask = get_pred(ds.load_y(_id))
-            
+
             result = metric_fn(mask, pred)
             results[_id_str] = result
         # end for
@@ -144,7 +145,7 @@ def calculate_metrics(exp_path, n_val, metrics_dict):
 
 def get_experiment_result(exp_path, n_splits, metric_name):
     val_results = []
-    
+
     for i in range(n_splits):
         metric_path = os.path.join(exp_path, f'experiment_{i}/test_metrics/{metric_name}.json')
         results_dict = load_json(metric_path)
@@ -152,7 +153,7 @@ def get_experiment_result(exp_path, n_splits, metric_name):
         val_mean = np.mean(list(results_dict.values()))
         val_results.append(val_mean)
     # end for
-    
+
     return np.mean(val_results)
 
 
@@ -200,6 +201,38 @@ def make_predictions(exp_path, n_val):
 
             del x, x_t, y
     # end for
+
+
+def do_experiment(exp_path, n_val):
+    """Performs learning, making predictions and calculating metrics processes."""
+
+    print('>>> loading resources..')
+
+    val_path = os.path.join(exp_path, f'experiment_{n_val}')
+    resources = load(os.path.join(val_path, 'resources.gz'))
+
+    torch_model = resources['torch_model']
+    batch_iter = resources['batch_iter']
+    epochs = resources['epochs']
+    steps_per_epoch = resources['steps_per_epoch']
+    saving_model_mode = resources['saving_model_mode']
+    metrics_dict = resources['metrics_dict']
+
+    val_data = load_val_data(exp_path=exp_path, n_val=n_val)
+
+    print('>>> fitting model..')
+
+    fit_model(
+        torch_model=torch_model, generator=batch_iter.flow(), val_path=val_path, val_data=val_data,
+        epochs=epochs, steps_per_epoch=steps_per_epoch, verbose=True,
+        saving_model_mode=saving_model_mode
+    )
+
+    print('>>> making predictions..')
+    make_predictions(exp_path=exp_path, n_val=n_val)
+
+    print('>>> calculating metrics..')
+    calculate_metrics(exp_path=exp_path, n_val=n_val, metrics_dict=metrics_dict)
 
 
 def test2csv_pred(prep_test_path, csv_filename, model, modalities=['image'], features=None,
@@ -258,7 +291,7 @@ def test2csv_pred(prep_test_path, csv_filename, model, modalities=['image'], fea
         ORIG_SIZE = 101
         if pred.shape[-1] != ORIG_SIZE:
             pred = resize(pred, output_shape=(ORIG_SIZE, ORIG_SIZE), order=3, preserve_range=True)
-            
+
         pred = pred > threshold
 
         # *** Encoding binarized predictions ***
