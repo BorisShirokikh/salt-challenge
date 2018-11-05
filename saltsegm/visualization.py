@@ -68,15 +68,18 @@ def plot_metrics(exp_path: str, n_val: int, fig_size=(15, 12), highlight=True):
     ax[2].set_title('Learning rates', fontsize=20)
     ax[2].plot(val_lrs)
 
+    # TODO: enhance text positioning
     if highlight:
         max_metric, min_loss = get_points_of_interest(exp_path, n_val)
 
         ax[0].axvline(min_loss[0], linestyle='--', color='cyan')
         ax[0].axhline(min_loss[1], linestyle='--', color='cyan')
         ax[0].plot(min_loss[0], min_loss[1], marker='o', markersize=8, color="red")
+        ax[0].text(min_loss[0], min_loss[1]+0.1, f'{min_loss[0]}, {min_loss[1]: 0.2f}', fontsize=12)
 
         ax[1].axvline(max_metric[0], linestyle='--', color='cyan')
         ax[1].axhline(max_metric[1], linestyle='--', color='cyan')
         ax[1].plot(max_metric[0], max_metric[1], marker='o', markersize=8, color="red")
+        ax[1].text(max_metric[0], max_metric[1] - 0.15, f'{max_metric[0]}, {max_metric[1]: 0.2f}', fontsize=12)
 
     plt.plot()
