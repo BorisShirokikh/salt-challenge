@@ -75,6 +75,13 @@ def load_config(exp_path: str):
     return config
 
 
+def load_log(exp_path: str, n_val: int):
+    """Returns log from n_val split of generated experiment."""
+    log_path = os.path.join(exp_path, f'experiment_{n_val}', 'log.json')
+    log = load_json(log_path)
+    return log
+
+
 def load_pred(identifier, predictions_path):
     """
     Loads the prediction numpy tensor with specified id.

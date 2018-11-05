@@ -2,11 +2,11 @@ import os
 
 import matplotlib.pyplot as plt
 
-from .utils import load_json
+from .utils import load_json, load_config, load_log
 
 
 # TODO exp_path should contain folders experiment_N, which are to be parsed
-def get_points_of_interest(exp_path : str, n_val : int):
+def get_points_of_interest(exp_path: str, n_val: int):
     """
     Return max validation metrics and min loss.
 
@@ -23,19 +23,20 @@ def get_points_of_interest(exp_path : str, n_val : int):
     tuple (max_val_metrics, min loss) with each element
     being tuple (epoch, value)
     """
-    val_path = os.path.join(exp_path, f'experiment_{n_val}')
+    # val_path = os.path.join(exp_path, f'experiment_{n_val}')
     # maybe define load_log function?
-    log = load_json(os.path.join(val_path, 'log.json'))
+    # log = load_json(os.path.join(val_path, 'log.json'))
+    log = load_log(exp_path, n_val)
     val_losses = log['val_losses']
     val_metrics = log['val_metrics']
 
-    max_metric =(val_metrics.index(max(val_metrics)), max(val_metrics))
+    max_metric = (val_metrics.index(max(val_metrics)), max(val_metrics))
     min_loss = (val_losses.index(min(val_losses)), min(val_losses))
     return max_metric, min_loss
 
 
 # TODO exp_path should contain folders experiment_N, which are to be parsed
-def plot_metrics(exp_path : str, n_val : int, highlight=True):
+def plot_metrics(exp_path: str, n_val: int, highlight=True):
     """
     Plots validation loss, validation metrics and learning rates
         over epochs.
@@ -51,17 +52,18 @@ def plot_metrics(exp_path : str, n_val : int, highlight=True):
     highlight : bool, optional
         Put the max val metrics and min loss points of interest on plot
     """
-    val_path = os.path.join(exp_path, f'experiment_{n_val}')
+    # val_path = os.path.join(exp_path, f'experiment_{n_val}')
     if highlight:
         max_metric, min_loss = get_points_of_interest(exp_path, n_val)
 
     # maybe define load_log function?
-    log = load_json(val_path)
+    # log = load_config(exp_path)
+    log = load_log(exp_path, n_val)
     val_losses = log['val_losses']
     val_metrics = log['val_metrics']
     val_lrs = log['val_lrs']
 
-    fig = plt.figure(figsize=(15,12))
+    fig = plt.figure(figsize=(15, 12))
     plt.subplot(3, 1, 1)
     if highlight:
         plt.axvline(min_loss[0], linestyle='--', color='green')
