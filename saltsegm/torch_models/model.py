@@ -95,6 +95,8 @@ class TorchModel:
         self.model.cuda()
         self.loss_fn.cuda()
         self.optimizer = self.optim(self.model.parameters())
+        if self.lr_scheduler is not None:
+            self.lr_scheduler = lr_scheduler(self.optimizer)
 
     def do_train_step(self, x, y):
         """Model performs single train step."""
@@ -110,7 +112,7 @@ class TorchModel:
 
 
 def fit_model(torch_model, generator, val_path, val_data=None, epochs=2, steps_per_epoch=100, verbose=True,
-              saving_model_mode='max'):
+              saving_model_mode='max', use_cude=True):
     """Function to fit model from generator.
 
     Parameters
@@ -141,6 +143,9 @@ def fit_model(torch_model, generator, val_path, val_data=None, epochs=2, steps_p
         If `None`, will save model after the last epoch.
         If `min`, will save the latest model with the lowest loss after val step.
         If `max`, will save the latest model with the highest metric after val step.
+        
+    use_cuda: bool, optional
+        If `True`, will transfer model to cuda device.
     """
     # *** Init stage ***
     if val_data is None:

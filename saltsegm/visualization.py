@@ -83,3 +83,4 @@ def plot_metrics(exp_path: str, n_val: int, fig_size=(15, 12), highlight=True):
         ax[1].text(max_metric[0], max_metric[1] - 0.15, f'{max_metric[0]}, {max_metric[1]: 0.2f}', fontsize=12)
 
     plt.plot()
+    plt.show()
