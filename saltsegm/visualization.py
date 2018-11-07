@@ -1,6 +1,12 @@
-import matplotlib.pyplot as plt
+import os
 
-from .utils import load_log
+from ipywidgets import IntSlider, interact
+import matplotlib.pyplot as plt
+import numpy as np
+import tqdm
+
+from .utils import load_log, load_json, get_pred
+from .dataset import Dataset
 
 
 # TODO exp_path should contain folders experiment_N, which are to be parsed
@@ -43,7 +49,7 @@ def plot_metrics(exp_path: str, n_val: int, fig_size=(15, 12), highlight=True):
         Path to the experiment folder, containing log.json
 
     n_val : int
-        Validation split number, required to access experiment_{n_val} folder
+        Validation split number, required to access experiment_{n_val} folder.
 
     fig_size : (int, int), optional
         Size of canvas for plots.
@@ -84,3 +90,68 @@ def plot_metrics(exp_path: str, n_val: int, fig_size=(15, 12), highlight=True):
 
     plt.plot()
     plt.show()
+
+
+# TODO sync threshold here and in metrics
+# TODO RENAME IT!
+def show_results(data_path: str, exp_path: str, n_val: int, threshold=0.5):
+    """
+    Show results in form of
+        Probability map / Prediction / Scaled Prediction / Mask
+
+    Parameters
+    ----------
+    data_path : str
+        Path to train dataset
+
+    exp_path : str
+        Path to experiment folder
+
+    n_val : int
+        Validation split number
+
+    threshold : int, optional
+        Threshold value for predictions
+    """
+    ds_train = Dataset(data_path)
+
+    test_ids_path = os.path.join(exp_path, f'experiment_{n_val}', 'test_ids.json')
+    test_ids = load_json(test_ids_path)
+    masks_folder = os.path.join(exp_path, f'experiment_{n_val}', 'test_predictions')
+
+    prob_maps, preds, sc_preds, masks = [], [], [], []
+
+    for _id in test_ids:
+        img_path = os.path.join(masks_folder, str(_id) + '.npy')
+        prob_maps.append(np.load(img_path))
+        preds.append(get_pred(prob_maps[-1], threshold=threshold, apply_scaling=False))
+        sc_preds.append(get_pred(prob_maps[-1], threshold=threshold, apply_scaling=True))
+        masks.append(ds_train.load_y(int(_id)))
+    # end for
+
+    def id2image(idx):
+        fig, axs = plt.subplots(1, 4, figsize=(10, 5))
+
+        ax_prob = axs[0]
+        ax_pred = axs[1]
+        ax_pred_sc = axs[2]
+        ax_mask = axs[3]
+
+        ax_prob.set_title('prob_map', fontsize=12)
+        ax_prob.imshow(prob_maps[idx].squeeze())
+
+        ax_pred.set_title('prediction', fontsize=12)
+        ax_pred.imshow(preds[idx])
+
+        ax_pred_sc.set_title('scaled prediction', fontsize=12)
+        ax_pred_sc.imshow(sc_preds[idx])
+
+        ax_mask.set_title('target_mask', fontsize=12)
+        ax_mask.imshow(masks[idx].squeeze())
+
+        plt.show()
+
+        print(f'id: {test_ids[idx]}')
+
+    sld = IntSlider(min=0, max=len(test_ids) - 1, step=1, continuous_update=False)
+    interact(id2image, idx=sld)
