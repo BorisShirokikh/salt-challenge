@@ -93,8 +93,7 @@ def plot_metrics(exp_path: str, n_val: int, fig_size=(15, 12), highlight=True):
 
 
 # TODO sync threshold here and in metrics
-# TODO RENAME IT!
-def show_results(data_path: str, exp_path: str, n_val: int, threshold=0.5):
+def show_predictions(data_path: str, exp_path: str, n_val: int, threshold=0.5):
     """
     Show results in form of
         Probability map / Prediction / Scaled Prediction / Mask
