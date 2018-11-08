@@ -86,6 +86,8 @@ class TorchModel:
         self.optim = optim
         self.optimizer = optim(self.model.parameters())
 
+        self.lr_scheduler_fn = lr_scheduler
+
         if lr_scheduler is not None:
             self.lr_scheduler = lr_scheduler(self.optimizer)
         else:
@@ -96,7 +98,7 @@ class TorchModel:
         self.loss_fn.cuda()
         self.optimizer = self.optim(self.model.parameters())
         if self.lr_scheduler is not None:
-            self.lr_scheduler = lr_scheduler(self.optimizer)
+            self.lr_scheduler = self.lr_scheduler_fn(self.optimizer)
 
     def do_train_step(self, x, y):
         """Model performs single train step."""
@@ -112,7 +114,7 @@ class TorchModel:
 
 
 def fit_model(torch_model, generator, val_path, val_data=None, epochs=2, steps_per_epoch=100, verbose=True,
-              saving_model_mode='max', use_cude=True):
+              saving_model_mode='max', use_cuda=True):
     """Function to fit model from generator.
 
     Parameters
@@ -154,7 +156,8 @@ def fit_model(torch_model, generator, val_path, val_data=None, epochs=2, steps_p
     if saving_model_mode is not None:
         assert saving_model_mode in ('min', 'max'), 'saving_model_mode should be `min` or `max`'
 
-    torch_model.to_cuda()
+    if use_cuda:
+        torch_model.to_cuda()
 
     best = None
     if saving_model_mode == 'min':
