@@ -79,13 +79,16 @@ class BatchIter:
                 index = random.choice(self.inner_ids)
                 x = self.x_stack[index]
                 y = self.y_stack[index]
-                
-                x_mirrored, batch_y[i] = augm_mirroring(
-                    x, y, prob_to_augm=self.mirroring_augm_prob
-                )
-                
-                batch_x[i] = augm_noise(
-                    x_mirrored, noise_ratio=self.noise_augm_ratio
-                )
+
+                batch_x[i] = x
+                batch_y[i] = y
+
+#                 x_mirrored, batch_y[i] = augm_mirroring(
+#                     x, y, prob_to_augm=self.mirroring_augm_prob
+#                 )
+
+#                 batch_x[i] = augm_noise(
+#                     x_mirrored, noise_ratio=self.noise_augm_ratio
+#                 )
 
             yield batch_x, batch_y
