@@ -147,3 +147,8 @@ class DatasetTest:
                 xs.append(x)
 
         return np.array(xs, dtype='float32')
+
+
+def filter_notarget_ids(ids, df):
+    filtered_ids = ids[df.target_ratio > 0]
+    return filtered_ids
