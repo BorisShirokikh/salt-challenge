@@ -9,6 +9,7 @@ from .unet import DownBlock
 # TODO: `dropout_rate` is not used
 # TODO: change `DownBlock` on max/avg pooling
 # TODO: increase number of filters while constructing `ResBlock` instead of `DownBlock`
+# TODO: 16 is hardcoded!
 class ResReg(nn.Module):
     def __init__(self, n_channels, n_filters=16, dropout_rate=0):
         super(ResReg, self).__init__()
