@@ -2,6 +2,7 @@ import os
 import json
 import pickle
 import gzip
+from pathlib import Path
 
 import numpy as np
 
@@ -192,3 +193,24 @@ def load(filename):
         obj = pickle.load(f)
 
     return obj
+
+
+def lock_exp(val_path, lock_name='.lock'):
+    """Checks/Creates `.lock` file in experiment directory to prevent collisions."""
+    filename = os.path.join(val_path, lock_name)
+
+    if not os.path.exists(filename):
+        Path(filename).touch(exist_ok=False)
+    else:
+        message = f'Directory {val_path} is locked.'
+
+        message_len = len(message)
+        filler = '#' * message_len
+
+        print(
+            filler, '\n',
+            message, '\n',
+            filler, '\n',
+            flush=True
+        )
+        raise EnvironmentError('Directory is locked.')

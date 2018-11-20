@@ -1,13 +1,3 @@
-#!/usr/bin/env bash
-while getopts exp_path:script_path: option
-do
-case "${option}"
-in
-exp_path) EXP_PATH=${OPTARG};;
-script_path) SCRIPT_PATH=${OPTARG};;
-esac
-done
-
 EXP_PATH=$1;
 SCRIPT_PATH=$2;
 

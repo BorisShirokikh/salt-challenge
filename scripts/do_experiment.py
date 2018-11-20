@@ -2,6 +2,7 @@ import os
 import argparse
 import warnings
 
+from saltsegm.utils import lock_exp
 from saltsegm.experiment import do_experiment
 
 if __name__ == '__main__':
@@ -16,5 +17,7 @@ if __name__ == '__main__':
     n_val = args.n_val
     val_path = os.path.join(exp_path, f'experiment_{n_val}')
     print('> experiment:', val_path)
+
+    lock_exp(val_path=val_path)
 
     do_experiment(exp_path=exp_path, n_val=n_val)
