@@ -77,8 +77,13 @@ class Dataset:
         """Returns ndarray of y corresponding to given `_id`."""
         assert _id in self.ids, f'There is no such id ({_id}) in dataset'
 
-        filename = os.path.join( self.data_path, self.metadata.iloc[_id][self.target] )
-        y = np.load(filename)
+        target_content = self.metadata.iloc[_id][self.target]
+
+        if isinstance(target_content, str):  # means `path`
+            filename = os.path.join(self.data_path, target_content)
+            y = np.load(filename)
+        else:  # means some feature, e.g. `target_ratio`
+            y = target_content
 
         return np.array([y], dtype='float32')
 

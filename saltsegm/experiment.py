@@ -125,11 +125,11 @@ def calculate_metrics(exp_path, n_val, metrics_dict):
     test_ids = np.array(test_ids_str, dtype='int64')
 
     for metric_name in metrics_dict.keys():
-        metric_fn, apply_scaling = metrics_dict[metric_name]
+        metric_fn = metrics_dict[metric_name]
 
         results = {}
         for _id, _id_str in zip(test_ids, test_ids_str):
-            pred = get_pred(load_pred(_id, pred_path), apply_scaling=apply_scaling)
+            pred = get_pred(load_pred(_id, pred_path))
             mask = get_pred(ds.load_y(_id))
 
             result = metric_fn(mask, pred)

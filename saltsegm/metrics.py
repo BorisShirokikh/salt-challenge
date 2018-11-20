@@ -39,6 +39,10 @@ def average_iou(true: np.ndarray, pred: np.ndarray) -> float:
         return metric / thresholds.shape[0]
 
 
+def l1_score(true, pred) -> float:
+    return np.abs(true - pred)
+
+
 def calc_val_metric(true, pred, metric_fn):
     """Calculates metric `metric_fn` during the validation step.
 
