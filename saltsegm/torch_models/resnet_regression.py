@@ -99,7 +99,7 @@ class ResReg(nn.Module):
         return x
 
 
-def get_ResReg(n_channels=1):
-    model = ResReg(n_channels=n_channels, n_filters=16)
+def get_ResReg(n_channels=1, n_filters=16):
+    model = ResReg(n_channels=n_channels, n_filters=n_filters)
 
     return model
