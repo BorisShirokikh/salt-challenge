@@ -83,7 +83,7 @@ class Dataset:
             filename = os.path.join(self.data_path, target_content)
             y = np.load(filename)
         else:  # means some feature, e.g. `target_ratio`
-            y = target_content
+            y = [[target_content]]
 
         return np.array([y], dtype='float32')
 

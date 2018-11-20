@@ -55,7 +55,7 @@ class ResReg(nn.Module):
         )
         curr_filters *= 2
 
-        # 16->4 img_size; 128->256 filters
+        # 16->8 img_size; 128->256 filters
         self.res4 = nn.Sequential(
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
@@ -64,6 +64,15 @@ class ResReg(nn.Module):
             DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2)
         )
         curr_filters *= 2
+
+        # 8->4 img_size; 256->256 filters
+        self.res5 = nn.Sequential(
+            ResBlock(in_ch=curr_filters, out_ch=curr_filters,
+                     kernel_size=3, padding=1),
+            ResBlock(in_ch=curr_filters, out_ch=curr_filters,
+                     kernel_size=3, padding=1),
+            DownBlock(in_ch=curr_filters, out_ch=curr_filters)
+        )
 
         # 4->1 img_size; 256->1024 filters
         self.res_flatten = nn.Sequential(
@@ -93,6 +102,7 @@ class ResReg(nn.Module):
         x = self.res2(x)
         x = self.res3(x)
         x = self.res4(x)
+        x = self.res5(x)
         x = self.res_flatten(x)
         x = self.res_final(x)
         x = self.final_conv(x)

@@ -1,6 +1,6 @@
 import numpy as np
 
-from .utils import get_pred
+from .torch_models.torch_utils import to_np
 
 
 def fraction(numerator, denominator, empty_val: float = 1):
@@ -40,10 +40,10 @@ def average_iou(true: np.ndarray, pred: np.ndarray) -> float:
 
 
 def l1_score(true, pred) -> float:
-    return np.abs(true - pred)
+    return np.abs(true.item() - pred.item())
 
 
-def calc_val_metric(true, pred, metric_fn):
+def calc_val_metric(true, pred, metric_fn, pred_fn):
     """Calculates metric `metric_fn` during the validation step.
 
     Parameters
@@ -56,9 +56,14 @@ def calc_val_metric(true, pred, metric_fn):
 
     metric_fn: Callable
         Function to calculate metric between two numpy tensors.
+
+    pred_fn
     """
+    true_np = to_np(true)
+    pred_np = to_np(pred)
+
     metric_list = []
-    for t, p in zip(true, pred):
-        metric_list.append(metric_fn(get_pred(t), get_pred(p)))
+    for t, p in zip(true_np, pred_np):
+        metric_list.append(metric_fn(pred_fn(t), pred_fn(p)))
 
     return np.mean(metric_list)

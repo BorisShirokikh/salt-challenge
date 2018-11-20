@@ -5,7 +5,7 @@ import torch
 from tqdm import tqdm
 
 from saltsegm.metrics import calc_val_metric
-from saltsegm.utils import is_better, dump_json
+from saltsegm.utils import is_better, dump_json, get_pred, get_spatial
 from .torch_utils import to_np, to_var, logits2pred  # TODO: change to_var()
 
 
@@ -36,7 +36,7 @@ def do_inf_step(x, model):
     return pred
 
 
-def do_val_step(x, y, model, loss_fn, metric_fn):
+def do_val_step(x, y, model, loss_fn, metric_fn, pred_fn):
     with torch.no_grad():
         model.eval()
         x = to_var(x, requires_grad=False)
@@ -48,7 +48,7 @@ def do_val_step(x, y, model, loss_fn, metric_fn):
         loss = loss_fn(logits, y)
         loss_to_return = float(loss.item())
 
-    metric = calc_val_metric(to_np(y), to_np(y_pred), metric_fn)
+    metric = calc_val_metric(y, y_pred, metric_fn, pred_fn)
 
     del x, y, loss
     torch.cuda.empty_cache()
@@ -57,7 +57,7 @@ def do_val_step(x, y, model, loss_fn, metric_fn):
 
 
 class TorchModel:
-    def __init__(self, model, loss_fn, metric_fn, optim, lr_scheduler=None):
+    def __init__(self, model, loss_fn, metric_fn, optim, lr_scheduler=None, task_type='segm'):
         """Custom torch model class to handle basic operations.
 
         Parameters
@@ -77,6 +77,9 @@ class TorchModel:
 
         lr_scheduler: torch.optim.lr_scheduler, or the same
             Scheduler to control learning rate changing during the training.
+
+        task_type: str, optional
+            `segm` or `other` type of task.
         """
         self.model = model
 
@@ -93,6 +96,10 @@ class TorchModel:
         else:
             self.lr_scheduler = None
 
+        assert task_type in ('segm', 'other', ), \
+            f'`task_type` should be `segm` or `other`, {task_type} given'
+        self.task_type = task_type
+
     def to_cuda(self):
         self.model.cuda()
         self.loss_fn.cuda()
@@ -106,7 +113,12 @@ class TorchModel:
 
     def do_val_step(self, x, y):
         """Model performs single validation step."""
-        return do_val_step(x, y, self.model, self.loss_fn, self.metric_fn)
+        if self.task_type == 'segm':
+            pred_fn = get_pred
+        else:
+            pred_fn = get_spatial
+
+        return do_val_step(x, y, self.model, self.loss_fn, self.metric_fn, pred_fn=pred_fn)
 
     def do_inf_step(self, x):
         """Model preforms single inference step."""

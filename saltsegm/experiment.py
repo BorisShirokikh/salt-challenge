@@ -6,13 +6,13 @@ import torch
 from tqdm import tqdm
 from skimage.transform import resize
 
-from .utils import load_json, dump_json, load_pred, get_pred, rl_enc, load
+from .utils import load_json, dump_json, load_pred, get_pred, get_spatial, rl_enc, load
 from .torch_models.torch_utils import to_np, to_var, logits2pred
 from .torch_models.model import fit_model
 from .dataset import Dataset, DatasetTest
 
 
-def generate_experiment(exp_path, cv_splits, dataset, exp_type='tvt'):
+def generate_experiment(exp_path, cv_splits, dataset, split_type='tvt', task_type='segm'):
     """Generates experiment with given parameters. Main information saves in config.
 
     Parameters
@@ -26,23 +26,30 @@ def generate_experiment(exp_path, cv_splits, dataset, exp_type='tvt'):
     dataset: class
         Dataset like object.
 
-    exp_type: str
-        Type of experiment: train-val-test (`tvt`) or train-val (`tv`).
+    split_type: str, optional
+        Type of split: train-val-test (`tvt`) or train-val (`tv`).
+
+    task_type: str, optional
+        Type of task: segmentation (`segm`) or other (`other`), for example regression.
     """
     if not os.path.exists(exp_path):
         os.makedirs(exp_path)
     else:
         assert False, f'Experiment `{exp_path}` already exists.'
 
-    assert exp_type in ('tvt', 'tv'), \
-        f'experiment type should be `tvt` or `tv`, {exp_type} given'
+    assert split_type in ('tvt', 'tv'), \
+        f'experiment type should be `tvt` or `tv`, {split_type} given'
+
+    assert task_type in ('segm', 'other'), \
+        f'experiment type should be `segm` or `other`, {task_type} given'
 
     config = {'data_path': dataset.data_path,
               'modalities': dataset.modalities,
               'features': dataset.features,
               'target': dataset.target,
               'n_splits': len(cv_splits),
-              'exp_type': exp_type}
+              'split_type': split_type,
+              'task_type': task_type}
     dump_json(config, os.path.join(exp_path, 'config.json'))
 
     for i, split in enumerate(cv_splits):
@@ -52,9 +59,9 @@ def generate_experiment(exp_path, cv_splits, dataset, exp_type='tvt'):
         dump_json(list(np.array(split['train_ids'], dtype='str')), os.path.join(val_path, 'train_ids.json'))
         dump_json(list(np.array(split['val_ids'], dtype='str')), os.path.join(val_path, 'val_ids.json'))
 
-        if exp_type == 'tvt':
+        if split_type == 'tvt':
             dump_json(list(np.array(split['test_ids'], dtype='str')), os.path.join(val_path, 'test_ids.json'))
-        elif exp_type == 'tv':
+        elif split_type == 'tv':
             pass
 
 
@@ -109,8 +116,11 @@ def calculate_metrics(exp_path, n_val, metrics_dict):
         `apply_scaling` is `bool` value indicates apply or not the scaling on prediction.
     """
     config_path = os.path.join(exp_path, 'config.json')
-
     config = load_json(config_path)
+
+    assert config['split_type'] == 'tvt', \
+        f'There is no test items to calculate metrics'
+
     ds = Dataset(data_path=config['data_path'], modalities=config['modalities'],
                  features=config['features'], target=config['target'])
 
@@ -124,13 +134,18 @@ def calculate_metrics(exp_path, n_val, metrics_dict):
     test_ids_str = load_json(os.path.join(val_path, 'test_ids.json'))
     test_ids = np.array(test_ids_str, dtype='int64')
 
+    if config['task_type'] == 'segm':
+        pred_fn = get_pred
+    else:  # == 'other'
+        pred_fn = get_spatial
+
     for metric_name in metrics_dict.keys():
         metric_fn = metrics_dict[metric_name]
 
         results = {}
         for _id, _id_str in zip(test_ids, test_ids_str):
-            pred = get_pred(load_pred(_id, pred_path))
-            mask = get_pred(ds.load_y(_id))
+            pred = pred_fn(load_pred(_id, pred_path))
+            mask = pred_fn(ds.load_y(_id))
 
             result = metric_fn(mask, pred)
             results[_id_str] = result

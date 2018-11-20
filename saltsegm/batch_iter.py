@@ -59,11 +59,11 @@ class BatchIter:
         self.x_stack = np.array(x_stack, dtype='float32')
         self.y_stack = np.array(y_stack, dtype='float32')
 
-        assert mirroring_augm_prob >= 0 and mirroring_augm_prob <= 1, \
+        assert 0 <= mirroring_augm_prob <= 1, \
             f'probability should be between 0 and 1, {mirroring_augm_prob} given'
         self.mirroring_augm_prob = mirroring_augm_prob
 
-        assert noise_augm_ratio >= 0 and noise_augm_ratio <= 1, \
+        assert 0 <= noise_augm_ratio <= 1, \
             f'Noise ratio should be between 0 and 1, {noise_augm_ratio} given'
         self.noise_augm_ratio = noise_augm_ratio
 
