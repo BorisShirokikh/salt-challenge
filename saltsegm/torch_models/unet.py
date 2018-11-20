@@ -1,6 +1,94 @@
 """Full assembly of the sub-parts to form the complete net."""
 
-from .unet_parts import *
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+from .blocks import InitConv, ResBlock, OutConv, DoubleConv
+
+
+class DownBlock(nn.Module):
+    def __init__(self, in_ch, out_ch, dropout_rate=0, pool_type='Max'):
+        """Block for downsampling and convolution in U-Net"""
+        super(DownBlock, self).__init__()
+
+        assert pool_type in ('Max', 'Avg'), \
+            f'block type should be Max or Avg, {pool_type} given'
+
+        super(DownBlock, self).__init__()
+
+        if pool_type == 'Max':
+            pool_block = nn.MaxPool2d(2)
+        elif pool_type == 'Avg':
+            pool_block = nn.AvgPool2d(2)
+
+        dropout = nn.Dropout2d(p=dropout_rate, inplace=True)
+        
+        conv_block = DoubleConv
+
+        self.pool_conv = nn.Sequential(
+            pool_block,
+            dropout,
+            conv_block(in_ch, out_ch)
+        )
+
+    def forward(self, x):
+        x = self.pool_conv(x)
+        return x
+
+
+class UpBlock(nn.Module):
+    def __init__(self, in_ch, out_ch, dropout_rate=0, learnable_upsample=True):
+        """Block for upsampling, concat and conv in U-Net"""
+        super(UpBlock, self).__init__()
+
+        # TODO: would be a nice idea if the upsampling could be learned too,
+        if learnable_upsample:
+            self.up = nn.ConvTranspose2d(in_ch // 2, in_ch // 2, 2, stride=2)
+        else:
+            self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+
+        conv_block = DoubleConv
+        self.conv = conv_block(in_ch, out_ch)
+        
+        self.dropout = nn.Dropout2d(p=dropout_rate, inplace=True)
+
+    def forward(self, x1, x2):
+        x1 = self.up(x1)
+
+        diff_x = x1.size()[-2] - x2.size()[-2]
+        diff_y = x1.size()[-1] - x2.size()[-1]
+
+        x2 = F.pad(x2, (diff_x // 2, int(diff_x / 2),
+                        diff_y // 2, int(diff_y / 2)))
+
+        x = torch.cat([x2, x1], dim=1)
+        
+        x = self.dropout(x)
+
+        x = self.conv(x)
+
+        return x
+
+
+class ResHead(nn.Module):
+    def __init__(self, n_channels):
+        super(ResHead, self).__init__()
+
+        conv_block = ResBlock
+
+        self.res_block_1 = conv_block(in_ch=n_channels, out_ch=n_channels, kernel_size=3,
+                                      padding=1)
+        self.res_block_2 = conv_block(in_ch=n_channels, out_ch=n_channels, kernel_size=3,
+                                      padding=1)
+        self.res_block_final = conv_block(in_ch=n_channels, out_ch=n_channels,
+                                          kernel_size=1, padding=0)
+
+    def forward(self, x):
+        x = self.res_block_1(x)
+        x = self.res_block_2(x)
+        x = self.res_block_final(x)
+        return x
 
 
 class UNet(nn.Module):
