@@ -116,17 +116,37 @@ def get_ResReg(n_channels=1, n_filters=16):
     return model
 
 
-class ResRegBasic(nn.Module):
-    def __init__(self, n_channels, n_filters=16, dropout_rate=0, pool_type='Max'):
-        super(ResRegBasic, self).__init__()
+class DownConv(nn.Module):
+    def __init__(self, in_ch, out_ch, dropout=0, pool_type='Max'):
+        super(DownBlock, self).__init__()
 
         assert pool_type in ('Max', 'Avg'), \
             f'block type should be Max or Avg, {pool_type} given'
 
         if pool_type == 'Max':
-            PoolBlock = nn.MaxPool2d(2)
+            pool_block = nn.MaxPool2d(2)
         elif pool_type == 'Avg':
-            PoolBlock = nn.AvgPool2d(2)
+            pool_block = nn.AvgPool2d(2)
+
+        down_conv = nn.Conv2d(in_channels=in_ch,
+                              out_channels=out_ch,
+                              kernel_size=3,
+                              padding=1,
+                              bias=False)
+
+        self.conv = nn.Sequential(
+            down_conv,
+            pool_block
+        )
+
+    def forward(self, x):
+        x = self.conv(x)
+        return x
+
+
+class ResRegBasic(nn.Module):
+    def __init__(self, n_channels, n_filters=16, dropout_rate=0, pool_type='Max'):
+        super(ResRegBasic, self).__init__()
 
         # initial convolution
         self.preact = nn.Sequential(
@@ -139,21 +159,15 @@ class ResRegBasic(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-        curr_filters = n_filters
-        DownConvBlock = nn.Conv2d(in_channels=curr_filters,
-                                  out_channels=curr_filters * 2,
-                                  kernel_size=3,
-                                  padding=1,
-                                  bias=False),
 
         # 128->64 img_size; 16->32 filters
+        curr_filters = n_filters
         self.res1 = nn.Sequential(
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownConvBlock,
-            PoolBlock,
+            DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2),
             nn.ReLU(inplace=True)
         )
         curr_filters *= 2
@@ -164,8 +178,7 @@ class ResRegBasic(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownConvBlock,
-            PoolBlock,
+            DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2),
             nn.ReLU(inplace=True)
         )
         curr_filters *= 2
@@ -176,8 +189,7 @@ class ResRegBasic(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownConvBlock,
-            PoolBlock,
+            DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2),
             nn.ReLU(inplace=True)
         )
         curr_filters *= 2
@@ -188,8 +200,7 @@ class ResRegBasic(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownConvBlock,
-            PoolBlock,
+            DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2),
             nn.ReLU(inplace=True)
         )
         curr_filters *= 2
@@ -200,8 +211,7 @@ class ResRegBasic(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownConvBlock,
-            PoolBlock,
+            DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2),
             nn.ReLU(inplace=True)
         )
 
@@ -240,7 +250,7 @@ class ResRegBasic(nn.Module):
         return x
 
 
-def get_ResRegBasic(n_channels = 1, n_filters=16, dropout_rate=0, pool_type='Max'):
+def get_ResRegBasic(n_channels=1, n_filters=16, dropout_rate=0, pool_type='Max'):
     model = ResRegBasic(n_channels=n_channels, n_filters=n_filters,
                         dropout_rate=dropout_rate, pool_type=pool_type)
     return model
