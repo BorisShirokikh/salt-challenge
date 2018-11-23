@@ -117,16 +117,16 @@ def get_ResReg(n_channels=1, n_filters=16):
 
 
 class DownConv(nn.Module):
-    def __init__(self, in_ch, out_ch, dropout=0, pool_type='Max'):
-        super(DownBlock, self).__init__()
+    def __init__(self, in_ch, out_ch, ratio=2, dropout=0, pool_type='Max'):
+        super(DownConv, self).__init__()
 
         assert pool_type in ('Max', 'Avg'), \
             f'block type should be Max or Avg, {pool_type} given'
 
         if pool_type == 'Max':
-            pool_block = nn.MaxPool2d(2)
+            pool_block = nn.MaxPool2d(ratio)
         elif pool_type == 'Avg':
-            pool_block = nn.AvgPool2d(2)
+            pool_block = nn.AvgPool2d(ratio)
 
         down_conv = nn.Conv2d(in_channels=in_ch,
                               out_channels=out_ch,
@@ -136,7 +136,7 @@ class DownConv(nn.Module):
 
         self.conv = nn.Sequential(
             down_conv,
-            pool_block
+            # pool_block
         )
 
     def forward(self, x):
@@ -159,7 +159,6 @@ class ResRegBasic(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-
         # 128->64 img_size; 16->32 filters
         curr_filters = n_filters
         self.res1 = nn.Sequential(
@@ -167,7 +166,7 @@ class ResRegBasic(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2),
+            DownConv(in_ch=curr_filters, out_ch=curr_filters * 2, ratio=2),
             nn.ReLU(inplace=True)
         )
         curr_filters *= 2
@@ -178,7 +177,7 @@ class ResRegBasic(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2),
+            DownConv(in_ch=curr_filters, out_ch=curr_filters * 2, ratio=2),
             nn.ReLU(inplace=True)
         )
         curr_filters *= 2
@@ -189,7 +188,7 @@ class ResRegBasic(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2),
+            DownConv(in_ch=curr_filters, out_ch=curr_filters * 2, ratio=2),
             nn.ReLU(inplace=True)
         )
         curr_filters *= 2
@@ -200,7 +199,7 @@ class ResRegBasic(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2),
+            DownConv(in_ch=curr_filters, out_ch=curr_filters * 2, ratio=2),
             nn.ReLU(inplace=True)
         )
         curr_filters *= 2
@@ -211,7 +210,7 @@ class ResRegBasic(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2),
+            DownConv(in_ch=curr_filters, out_ch=curr_filters * 2, ratio=2),
             nn.ReLU(inplace=True)
         )
 
