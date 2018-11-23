@@ -139,13 +139,20 @@ class ResRegBasic(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-        # 128->64 img_size; 16->32 filters
         curr_filters = n_filters
+        DownConvBlock = nn.Conv2d(in_channels=curr_filters,
+                                  out_channels=curr_filters * 2,
+                                  kernel_size=3,
+                                  padding=1,
+                                  bias=False),
+
+        # 128->64 img_size; 16->32 filters
         self.res1 = nn.Sequential(
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            ResBlock(in_ch=curr_filters, out_ch=curr_filters * 2,
+            ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
+            DownConvBlock,
             PoolBlock,
             nn.ReLU(inplace=True)
         )
@@ -155,8 +162,9 @@ class ResRegBasic(nn.Module):
         self.res2 = nn.Sequential(
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            ResBlock(in_ch=curr_filters, out_ch=curr_filters * 2,
+            ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
+            DownConvBlock,
             PoolBlock,
             nn.ReLU(inplace=True)
         )
@@ -166,8 +174,9 @@ class ResRegBasic(nn.Module):
         self.res3 = nn.Sequential(
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            ResBlock(in_ch=curr_filters, out_ch=curr_filters * 2,
+            ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
+            DownConvBlock,
             PoolBlock,
             nn.ReLU(inplace=True)
         )
@@ -177,8 +186,9 @@ class ResRegBasic(nn.Module):
         self.res4 = nn.Sequential(
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            ResBlock(in_ch=curr_filters, out_ch=curr_filters * 2,
+            ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
+            DownConvBlock,
             PoolBlock,
             nn.ReLU(inplace=True)
         )
@@ -188,8 +198,9 @@ class ResRegBasic(nn.Module):
         self.res5 = nn.Sequential(
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            ResBlock(in_ch=curr_filters, out_ch=curr_filters * 2,
+            ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
+            DownConvBlock,
             PoolBlock,
             nn.ReLU(inplace=True)
         )
