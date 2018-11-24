@@ -22,10 +22,20 @@ class DoubleConv(nn.Module):
         return x
 
 
+def identity(x):
+    return x
+
+
 class ResBlock(nn.Module):
-    def __init__(self, in_ch, out_ch, kernel_size=3, padding=1):
+    def __init__(self, in_ch, out_ch, kernel_size=3, padding=1, stride=1):
         """Residual block."""
         super(ResBlock, self).__init__()
+        
+        if in_ch != out_ch or stride != 1:
+            self.adjust_to_stride = nn.Conv2d(in_ch, out_ch, kernel_size=1, stride=stride)
+        else:
+            self.adjust_to_stride = identity
+        
         self.conv = nn.Sequential(
             nn.BatchNorm2d(in_ch),
             nn.ReLU(inplace=True),
@@ -39,6 +49,7 @@ class ResBlock(nn.Module):
 
     def forward(self, x):
         x_conv = self.conv(x)
+        x = self.adjust_to_stride(x)
         return x + x_conv
 
 

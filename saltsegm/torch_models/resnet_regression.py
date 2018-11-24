@@ -34,7 +34,10 @@ class ResReg(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2)
+            # DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2)
+            nn.MaxPool2d(2),
+            ResBlock(in_ch=curr_filters, out_ch=curr_filters * 2,
+                     kernel_size=3, padding=1)
         )
         curr_filters *= 2
 
@@ -44,7 +47,10 @@ class ResReg(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2)
+            # DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2)
+            nn.MaxPool2d(2),
+            ResBlock(in_ch=curr_filters, out_ch=curr_filters * 2,
+                     kernel_size=3, padding=1)
         )
         curr_filters *= 2
 
@@ -54,7 +60,10 @@ class ResReg(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2)
+            # DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2)
+            nn.MaxPool2d(2),
+            ResBlock(in_ch=curr_filters, out_ch=curr_filters * 2,
+                     kernel_size=3, padding=1)
         )
         curr_filters *= 2
 
@@ -64,7 +73,10 @@ class ResReg(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2)
+            # DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2)
+            nn.MaxPool2d(2),
+            ResBlock(in_ch=curr_filters, out_ch=curr_filters * 2,
+                     kernel_size=3, padding=1)
         )
         curr_filters *= 2
 
@@ -74,7 +86,10 @@ class ResReg(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownBlock(in_ch=curr_filters, out_ch=curr_filters)
+            # DownBlock(in_ch=curr_filters, out_ch=curr_filters * 2)
+            nn.MaxPool2d(2),
+            ResBlock(in_ch=curr_filters, out_ch=curr_filters,
+                     kernel_size=3, padding=1)
         )
 
         # 4->1 img_size; 256->1024 filters
@@ -95,11 +110,13 @@ class ResReg(nn.Module):
 
         # 1->1 img_size, 1024->1 filters final conv
         self.final_conv = nn.Sequential(
+            nn.BatchNorm2d(curr_filters),
             nn.Conv2d(in_channels=curr_filters,
                       out_channels=1,
                       kernel_size=1,
                       padding=0),
-            # nn.Sigmoid()
+            nn.BatchNorm2d(1),
+            nn.Sigmoid()
         )
 
     def forward(self, x):
