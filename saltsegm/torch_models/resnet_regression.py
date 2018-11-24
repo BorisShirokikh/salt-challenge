@@ -94,10 +94,13 @@ class ResReg(nn.Module):
                                   padding=0)
 
         # 1->1 img_size, 1024->1 filters final conv
-        self.final_conv = nn.Conv2d(in_channels=curr_filters,
-                                    out_channels=1,
-                                    kernel_size=1,
-                                    padding=0)
+        self.final_conv = nn.Sequential(
+            nn.Conv2d(in_channels=curr_filters,
+                      out_channels=1,
+                      kernel_size=1,
+                      padding=0),
+            # nn.Sigmoid()
+        )
 
     def forward(self, x):
         x = self.preact(x)
@@ -209,7 +212,7 @@ class ResRegBasic(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            # DownConv(in_ch=curr_filters, out_ch=curr_filters * 2, downratio=2),
+            DownConv(in_ch=curr_filters, out_ch=curr_filters, downratio=2),
         )
 
         # 4->1 img_size; 256->1024 filters
@@ -218,7 +221,7 @@ class ResRegBasic(nn.Module):
                      kernel_size=3, padding=1),
             nn.Conv2d(in_channels=curr_filters,
                       out_channels=curr_filters * 4,
-                      kernel_size=4)
+                      kernel_size=4)#, bias=False)
         )
         curr_filters *= 4
 
@@ -229,18 +232,28 @@ class ResRegBasic(nn.Module):
                                   padding=0)
 
         # 1->1 img_size, 1024->1 filters final conv
-        self.final_conv = nn.Conv2d(in_channels=curr_filters,
-                                    out_channels=1,
-                                    kernel_size=1,
-                                    padding=0)
+        self.final_conv = nn.Sequential(
+            nn.Conv2d(in_channels=curr_filters,
+                      out_channels=1,
+                      kernel_size=1,
+                      padding=0),
+            nn.Hardtanh(min_val=0, max_val=1, inplace=True)
+        )
+               
 
     def forward(self, x):
         x = self.preact(x)
+        #print(x.size())
         x = self.res1(x)
+        #print(x.size())
         x = self.res2(x)
+        #print(x.size())
         x = self.res3(x)
+        #print(x.size())
         x = self.res4(x)
+        #print(x.size())
         x = self.res5(x)
+        #print(x.size())
         x = self.res_flatten(x)
         x = self.res_final(x)
         x = self.final_conv(x)
