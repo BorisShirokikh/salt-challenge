@@ -209,7 +209,7 @@ class ResRegBasic(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownConv(in_ch=curr_filters, out_ch=curr_filters * 2, downratio=2),
+            # DownConv(in_ch=curr_filters, out_ch=curr_filters * 2, downratio=2),
         )
 
         # 4->1 img_size; 256->1024 filters
