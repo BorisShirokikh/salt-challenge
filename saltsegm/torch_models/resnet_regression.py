@@ -235,25 +235,15 @@ class ResRegBasic(nn.Module):
                                     padding=0)
 
     def forward(self, x):
-        print(x.size(), file=sys.stderr)
         x = self.preact(x)
-        print(x.size(), file=sys.stderr)
         x = self.res1(x)
-        print(x.size(), file=sys.stderr)
         x = self.res2(x)
-        print(x.size(), file=sys.stderr)
         x = self.res3(x)
-        print(x.size(), file=sys.stderr)
         x = self.res4(x)
-        print(x.size(), file=sys.stderr)
         x = self.res5(x)
-        print(x.size(), file=sys.stderr)
         x = self.res_flatten(x)
-        print(x.size(), file=sys.stderr)
         x = self.res_final(x)
-        print(x.size(), file=sys.stderr)
         x = self.final_conv(x)
-        print(x.size(), file=sys.stderr)
         return x
 
 
