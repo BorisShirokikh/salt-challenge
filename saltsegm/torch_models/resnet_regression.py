@@ -1,5 +1,7 @@
 """Regression net with ResBlocks."""
 
+import sys
+
 import torch.nn as nn
 
 from .blocks import ResBlock
@@ -117,26 +119,27 @@ def get_ResReg(n_channels=1, n_filters=16):
 
 
 class DownConv(nn.Module):
-    def __init__(self, in_ch, out_ch, ratio=2, dropout=0, pool_type='Max'):
+    def __init__(self, in_ch, out_ch, downratio=2, dropout=0, pool_type='Max'):
         super(DownConv, self).__init__()
 
         assert pool_type in ('Max', 'Avg'), \
             f'block type should be Max or Avg, {pool_type} given'
 
         if pool_type == 'Max':
-            pool_block = nn.MaxPool2d(ratio)
+            pool_block = nn.MaxPool2d(downratio)
         elif pool_type == 'Avg':
-            pool_block = nn.AvgPool2d(ratio)
+            pool_block = nn.AvgPool2d(downratio)
 
-        down_conv = nn.Conv2d(in_channels=in_ch,
-                              out_channels=out_ch,
-                              kernel_size=3,
-                              padding=1,
-                              bias=False)
+        preconv = nn.Conv2d(in_channels=in_ch,
+                            out_channels=out_ch,
+                            kernel_size=3,
+                            padding=1,
+                            bias=False)
 
         self.conv = nn.Sequential(
-            down_conv,
-            # pool_block
+            preconv,
+            pool_block,
+            nn.ReLU(inplace=True)
         )
 
     def forward(self, x):
@@ -166,8 +169,7 @@ class ResRegBasic(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownConv(in_ch=curr_filters, out_ch=curr_filters * 2, ratio=2),
-            nn.ReLU(inplace=True)
+            DownConv(in_ch=curr_filters, out_ch=curr_filters * 2, downratio=2),
         )
         curr_filters *= 2
 
@@ -177,8 +179,7 @@ class ResRegBasic(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownConv(in_ch=curr_filters, out_ch=curr_filters * 2, ratio=2),
-            nn.ReLU(inplace=True)
+            DownConv(in_ch=curr_filters, out_ch=curr_filters * 2, downratio=2),
         )
         curr_filters *= 2
 
@@ -188,8 +189,7 @@ class ResRegBasic(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownConv(in_ch=curr_filters, out_ch=curr_filters * 2, ratio=2),
-            nn.ReLU(inplace=True)
+            DownConv(in_ch=curr_filters, out_ch=curr_filters * 2, downratio=2),
         )
         curr_filters *= 2
 
@@ -199,8 +199,7 @@ class ResRegBasic(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownConv(in_ch=curr_filters, out_ch=curr_filters * 2, ratio=2),
-            nn.ReLU(inplace=True)
+            DownConv(in_ch=curr_filters, out_ch=curr_filters * 2, downratio=2),
         )
         curr_filters *= 2
 
@@ -210,8 +209,7 @@ class ResRegBasic(nn.Module):
                      kernel_size=3, padding=1),
             ResBlock(in_ch=curr_filters, out_ch=curr_filters,
                      kernel_size=3, padding=1),
-            DownConv(in_ch=curr_filters, out_ch=curr_filters * 2, ratio=2),
-            nn.ReLU(inplace=True)
+            DownConv(in_ch=curr_filters, out_ch=curr_filters * 2, downratio=2),
         )
 
         # 4->1 img_size; 256->1024 filters
@@ -237,15 +235,25 @@ class ResRegBasic(nn.Module):
                                     padding=0)
 
     def forward(self, x):
+        print(x.size(), file=sys.stderr)
         x = self.preact(x)
+        print(x.size(), file=sys.stderr)
         x = self.res1(x)
+        print(x.size(), file=sys.stderr)
         x = self.res2(x)
+        print(x.size(), file=sys.stderr)
         x = self.res3(x)
+        print(x.size(), file=sys.stderr)
         x = self.res4(x)
+        print(x.size(), file=sys.stderr)
         x = self.res5(x)
+        print(x.size(), file=sys.stderr)
         x = self.res_flatten(x)
+        print(x.size(), file=sys.stderr)
         x = self.res_final(x)
+        print(x.size(), file=sys.stderr)
         x = self.final_conv(x)
+        print(x.size(), file=sys.stderr)
         return x
 
 
