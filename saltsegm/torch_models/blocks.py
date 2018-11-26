@@ -28,24 +28,23 @@ def identity(x):
 
 
 # pad_modules = {'Replication': nn.ReplicationPad2d, 'Constant': nn.ConstantPad2d}
-
-
+#
+#
 # def sum_channelwise(x, x_conv):
 #     n_ch = x.shape[1]
 #     n_conv_ch = x_conv.shape[1]
 #     if n_ch == n_conv_ch:
 #         return x_conv + x
 #     else:
-#         return torch.cat((x_conv[:, :n_ch, ...] + x, x_conv[:, n_ch:, ...]), dim=1)
-
-
-# class 
+#return torch.cat((x_conv[:, :n_ch, ...] + x, x_conv[:, n_ch:, ...]), dim=1)
+#
+#
 # def adjust_channels(x, x_conv):
 #     in_ch = x.shape[1]
 #     out_ch = x_conv.shape[1]
 #     return x_conv + nn.Conv2d(in_ch, out_ch, kernel_size=1)(x)
-
-
+#
+#
 # class ResBlock(nn.Module):
 #     def __init__(self, in_ch, out_ch, kernel_size=3, padding=1, pad_type='Constant',
 #                  adjust_n_ch_with_conv=True):
@@ -56,7 +55,6 @@ def identity(x):
 #         pad = pad_modules[pad_type]
 #         if pad_type == 'Constant':
 #             pad = partial(pad, value=0)
-
 #         self.conv = nn.Sequential(
 #             nn.BatchNorm2d(in_ch),
 #             nn.ReLU(inplace=True),
@@ -69,9 +67,6 @@ def identity(x):
 #             nn.Conv2d(in_channels=out_ch, out_channels=out_ch, kernel_size=kernel_size,
 #                       bias=False)
 #         )
-
-#         if in_ch <= out_ch:
-#             if adjust_n_ch_with_conv:
 #                 self.adjust_to_ch = adjust_channels
 #             else:
 #                 self.adjust_to_ch = sum_channelwise
@@ -79,8 +74,9 @@ def identity(x):
 #             assert adjust_n_ch_with_conv, \
 #                 'Cannot adjust in_ch > out_ch without conv.'
 #             self.adjust_to_ch = adjust_channels
-
-#     def forward(self, x):
+#
+#
+#    def forward(self, x):
 #         x_conv = self.conv(x)
 #         x = self.adjust_to_ch(x, x_conv)
 #         return x

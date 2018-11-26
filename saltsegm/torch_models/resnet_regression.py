@@ -256,21 +256,14 @@ class ResRegBasic(nn.Module):
                       padding=0),
             nn.Hardtanh(min_val=0, max_val=1, inplace=True)
         )
-               
 
     def forward(self, x):
         x = self.preact(x)
-        #print(x.size())
         x = self.res1(x)
-        #print(x.size())
         x = self.res2(x)
-        #print(x.size())
         x = self.res3(x)
-        #print(x.size())
         x = self.res4(x)
-        #print(x.size())
         x = self.res5(x)
-        #print(x.size())
         x = self.res_flatten(x)
         x = self.res_final(x)
         x = self.final_conv(x)
