@@ -213,13 +213,13 @@ def make_predictions(exp_path, n_val):
         with torch.no_grad():
             model.eval()
             x = np.array([x], dtype='float32')
-            y = to_np(torch_model.do_inf_step(x))[0]
+            y = torch_model.do_inf_step(x)[0]
 
             y_filename = os.path.join(pred_path, _id_str + '.npy')
 
             np.save(y_filename, y)
 
-            del x, x_t, y
+            del x, y
     # end for
 
 
