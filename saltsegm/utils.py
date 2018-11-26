@@ -7,6 +7,9 @@ from pathlib import Path
 import numpy as np
 
 
+def identity(x):
+    return x
+
 def id2png(_id):
     return _id + '.png'
 
