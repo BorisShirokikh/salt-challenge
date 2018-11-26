@@ -183,16 +183,21 @@ def make_predictions(exp_path, n_val):
     n_val: int
         The id of cross-val to make predictions in.
     """
+    val_path = os.path.join(exp_path, f'experiment_{n_val}')
+
+    resources = load(os.path.join(val_path, 'resources.gz'))
+    torch_model = resources['torch_model']
+
     config_path = os.path.join(exp_path, 'config.json')
 
     config = load_json(config_path)
     ds = Dataset(data_path=config['data_path'], modalities=config['modalities'],
                  features=config['features'], target=config['target'])
 
-    val_path = os.path.join(exp_path, f'experiment_{n_val}')
-
     model = torch.load(os.path.join(val_path, 'model.pt'))
-    model = model.cuda()
+    # model = model.cuda()
+    torch_model.model = model
+    torch_model.to_cuda()
 
     pred_path = os.path.join(val_path, 'test_predictions')
     if not os.path.exists(pred_path):
@@ -208,7 +213,7 @@ def make_predictions(exp_path, n_val):
         with torch.no_grad():
             model.eval()
             x_t = to_var(np.array([x], dtype='float32'), requires_grad=False)
-            y = to_np(logits2pred(model(x_t)))[0]
+            y = to_np(torch_model.do_inf_step(x_t))[0]
 
             y_filename = os.path.join(pred_path, _id_str + '.npy')
 
@@ -244,7 +249,7 @@ def do_experiment(exp_path, n_val):
     )
 
     print('>>> making predictions..')
-    make_predictions(exp_path=exp_path, n_val=n_val)
+    make_predictions(exp_path=exp_path, n_val=n_val, )
 
     print('>>> calculating metrics..')
     calculate_metrics(exp_path=exp_path, n_val=n_val, metrics_dict=metrics_dict)
