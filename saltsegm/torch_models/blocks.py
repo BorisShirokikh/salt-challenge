@@ -36,7 +36,7 @@ def identity(x):
 #     if n_ch == n_conv_ch:
 #         return x_conv + x
 #     else:
-#return torch.cat((x_conv[:, :n_ch, ...] + x, x_conv[:, n_ch:, ...]), dim=1)
+# return torch.cat((x_conv[:, :n_ch, ...] + x, x_conv[:, n_ch:, ...]), dim=1)
 #
 #
 # def adjust_channels(x, x_conv):

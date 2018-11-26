@@ -7,7 +7,7 @@ from tqdm import tqdm
 from skimage.transform import resize
 
 from .utils import load_json, dump_json, load_pred, get_pred, get_spatial, rl_enc, load
-from .torch_models.torch_utils import to_np, to_var, logits2pred
+from .torch_models.torch_utils import to_np, to_var
 from .torch_models.model import fit_model
 from .dataset import Dataset, DatasetTest
 
@@ -212,8 +212,8 @@ def make_predictions(exp_path, n_val):
         # DO INFERENCE STEP:
         with torch.no_grad():
             model.eval()
-            x_t = to_var(np.array([x], dtype='float32'), requires_grad=False)
-            y = to_np(torch_model.do_inf_step(x_t))[0]
+            x = np.array([x], dtype='float32')
+            y = to_np(torch_model.do_inf_step(x))[0]
 
             y_filename = os.path.join(pred_path, _id_str + '.npy')
 
