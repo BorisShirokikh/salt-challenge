@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from saltsegm.metrics import calc_val_metric
 from saltsegm.utils import is_better, dump_json, get_pred, get_spatial
-from .torch_utils import to_np, to_var, logits2pred  # TODO: change to_var()
+from .torch_utils import to_np, to_var  # TODO: change to_var()
 
 
 def do_train_step(x, y, model, optimizer, loss_fn):
@@ -27,7 +27,7 @@ def do_train_step(x, y, model, optimizer, loss_fn):
     return loss_to_return
 
 
-def do_inf_step(x, model):
+def do_inf_step(x, model, logits2pred):
     with torch.no_grad():
         model.eval()
         x = to_var(x, requires_grad=False)
@@ -36,7 +36,7 @@ def do_inf_step(x, model):
     return pred
 
 
-def do_val_step(x, y, model, loss_fn, metric_fn, pred_fn):
+def do_val_step(x, y, model, logits2loss, logits2pred, metric_fn, pred_fn):
     with torch.no_grad():
         model.eval()
         x = to_var(x, requires_grad=False)
@@ -45,7 +45,7 @@ def do_val_step(x, y, model, loss_fn, metric_fn, pred_fn):
         logits = model(x)
         y_pred = logits2pred(logits)
 
-        loss = loss_fn(logits, y)
+        loss = logits2loss(logits, y)
         loss_to_return = float(loss.item())
 
     metric = calc_val_metric(y, y_pred, metric_fn, pred_fn)
@@ -57,7 +57,7 @@ def do_val_step(x, y, model, loss_fn, metric_fn, pred_fn):
 
 
 class TorchModel:
-    def __init__(self, model, loss_fn, metric_fn, optim, lr_scheduler=None, task_type='segm'):
+    def __init__(self, model, logits2loss, logits2pred, metric_fn, optim, lr_scheduler=None, task_type='segm'):
         """Custom torch model class to handle basic operations.
 
         Parameters
@@ -65,8 +65,11 @@ class TorchModel:
         model: torch.nn.Module, or the same
             Model graph.
 
-        loss_fn: torch.nn.modules.loss, or the same
+        logits2loss: torch.nn.modules.loss, or the same
             Loss function to calculate gradients.
+
+        logits2pred: Callable
+            Function to transform logits into prediction.
 
         metric_fn: Callable
             Function to calculate metric between `true` and `pred` tensors
@@ -83,7 +86,8 @@ class TorchModel:
         """
         self.model = model
 
-        self.loss_fn = loss_fn
+        self.logits2loss = logits2loss
+        self.logits2pred = logits2pred
         self.metric_fn = metric_fn
 
         self.optim = optim
@@ -102,14 +106,14 @@ class TorchModel:
 
     def to_cuda(self):
         self.model.cuda()
-        self.loss_fn.cuda()
+        self.logits2loss.cuda()
         self.optimizer = self.optim(self.model.parameters())
         if self.lr_scheduler is not None:
             self.lr_scheduler = self.lr_scheduler_fn(self.optimizer)
 
     def do_train_step(self, x, y):
         """Model performs single train step."""
-        return do_train_step(x, y, self.model, self.optimizer, self.loss_fn)
+        return do_train_step(x, y, self.model, self.optimizer, self.logits2loss)
 
     def do_val_step(self, x, y):
         """Model performs single validation step."""
@@ -118,11 +122,11 @@ class TorchModel:
         else:
             pred_fn = get_spatial
 
-        return do_val_step(x, y, self.model, self.loss_fn, self.metric_fn, pred_fn=pred_fn)
+        return do_val_step(x, y, self.model, self.logits2loss, self.logits2pred, self.metric_fn, pred_fn=pred_fn)
 
     def do_inf_step(self, x):
         """Model preforms single inference step."""
-        return do_inf_step(x, self.model)
+        return do_inf_step(x, self.model, self.logits2pred)
 
 
 def fit_model(torch_model, generator, val_path, val_data=None, epochs=2, steps_per_epoch=100, verbose=True,
