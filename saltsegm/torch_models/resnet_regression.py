@@ -115,8 +115,8 @@ class ResReg(nn.Module):
                       out_channels=1,
                       kernel_size=1,
                       padding=0),
-            nn.BatchNorm2d(1),
-            # nn.Sigmoid()
+            # nn.BatchNorm2d(1),
+            nn.Sigmoid()
         )
 
     def forward(self, x):
