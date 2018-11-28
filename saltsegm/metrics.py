@@ -42,6 +42,9 @@ def average_iou(true: np.ndarray, pred: np.ndarray) -> float:
 def inverse_l1(true, pred) -> float:
     return 1 - np.abs(true.item() - pred.item())
 
+def inverse_l2(true, pred) -> float:
+    return 1 - (true.item() - pred.item())**2
+
 
 def calc_val_metric(true, pred, metric_fn, pred_fn):
     """Calculates metric `metric_fn` during the validation step.
