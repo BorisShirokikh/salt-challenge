@@ -3,7 +3,7 @@ import random
 import numpy as np
 from tqdm import tqdm
 
-from .augmentation import augm_mirroring, augm_noise
+from .augmentation import augm_d4, augm_noise
 
 
 class BatchIter:
@@ -80,12 +80,10 @@ class BatchIter:
                 x = self.x_stack[index]
                 y = self.y_stack[index]
 
-                batch_x[i] = x
-                batch_y[i] = y
+                # batch_x[i] = x
+                # batch_y[i] = y
 
-#                 x_mirrored, batch_y[i] = augm_mirroring(
-#                     x, y, prob_to_augm=self.mirroring_augm_prob
-#                 )
+                batch_y[i], batch_y[i] = augm_d4(x, y)
 
 #                 batch_x[i] = augm_noise(
 #                     x_mirrored, noise_ratio=self.noise_augm_ratio
