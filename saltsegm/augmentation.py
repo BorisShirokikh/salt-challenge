@@ -7,6 +7,40 @@ def augm_example(x, y):
     return x, y
 
 
+def augm_d4(x_, y_):
+    """Preforms augmentation using D4 symmetry group"""
+    # For notation and naming http://mathstat.slu.edu/escher/index.php/Isometry_Groups
+    x_, y_ = np.array(x_), np.array(y_)
+
+    def identity(x, y):
+        return x, y
+
+    def rot90(x, y):
+        return np.rot90(x, k=1), np.rot90(y, k=1)
+
+    def rot180(x, y):
+        return np.rot90(x, k=1), np.rot90(y, k=2)
+
+    def rot270(x, y):
+        return np.rot90(x, k=3), np.rot90(y, k=3)
+
+    def m1flip(x, y):
+        return np.flip(x, axis=0), np.flip(y, axis=0)
+
+    def m2flip(x, y):
+        return np.rot90(np.flip(x, axis=1), axes=(1, 0)), np.rot90(np.flip(y, axis=1), axes=(1, 0))
+
+    def m3flip(x, y):
+        return np.flip(x, axis=1), np.flip(y, axis=1)
+
+    def m4flip(x, y):
+        return np.flip(np.rot90(x), axis=0), np.flip(np.rot90(y), axis=0)
+
+    augmentations = [identity, rot90, rot180, rot270, m1flip, m2flip, m3flip, m4flip]
+    active_augm = random.choice(augmentations)
+    return active_augm(x_, y_)
+
+
 def augm_mirroring(x, y, prob_to_augm=0.66):
     """Performs mirroring on given `x` and `y`."""
     x, y = np.array(x), np.array(y)
